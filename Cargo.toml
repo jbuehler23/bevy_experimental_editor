@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "spacetime-demos/blackholio/server-rust",
+    "spacetime-demos/blackholio/client-bevy",
+]
+resolver = "2"
+
+[workspace.dependencies]
+bevy = { version = "0.16", default-features = false, features = [
+  "std",
+  "bevy_log",
+] }
+spacetimedb-sdk = { version = "1.3.0" }
