@@ -3,6 +3,10 @@ use spacetimedb::{
 };
 use std::time::Duration;
 
+pub mod math;
+
+use math::DbVector2;
+
 #[spacetimedb::table(name = spawn_food_timer, scheduled(spawn_food))]
 pub struct SpawnFoodTimer {
     #[primary_key]
@@ -18,13 +22,6 @@ pub struct Config {
     #[primary_key]
     pub id: u32,
     pub world_size: u64,
-}
-
-// This allows us to store 2D points in tables.
-#[derive(SpacetimeType, Clone, Debug)]
-pub struct DbVector2 {
-    pub x: f32,
-    pub y: f32,
 }
 
 #[spacetimedb::table(name = entity, public)]
@@ -82,6 +79,12 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Interval(Duration::from_millis(500).into()),
     })?;
+    ctx.db
+        .move_all_players_timer()
+        .try_insert(MoveAllPlayersTimer {
+            scheduled_id: 0,
+            scheduled_at: ScheduleAt::Interval(Duration::from_millis(50).into()),
+        })?;
     Ok(())
 }
 
@@ -225,4 +228,66 @@ fn spawn_circle_at(
         last_split_time: timestamp,
     })?;
     Ok(entity)
+}
+
+#[spacetimedb::reducer]
+pub fn update_player_input(ctx: &ReducerContext, direction: DbVector2) -> Result<(), String> {
+    let player = ctx
+        .db
+        .player()
+        .identity()
+        .find(&ctx.sender)
+        .ok_or("Player not found")?;
+    for mut circle in ctx.db.circle().player_id().filter(&player.player_id) {
+        circle.direction = direction.normalized();
+        circle.speed = direction.magnitude().clamp(0.0, 1.0);
+        ctx.db.circle().entity_id().update(circle);
+    }
+    Ok(())
+}
+
+#[spacetimedb::table(name = move_all_players_timer, scheduled(move_all_players))]
+pub struct MoveAllPlayersTimer {
+    #[primary_key]
+    #[auto_inc]
+    scheduled_id: u64,
+    scheduled_at: spacetimedb::ScheduleAt,
+}
+
+const START_PLAYER_SPEED: u32 = 10;
+
+fn mass_to_max_move_speed(mass: u32) -> f32 {
+    2.0 * START_PLAYER_SPEED as f32 / (1.0 + (mass as f32 / START_PLAYER_MASS as f32).sqrt())
+}
+
+#[spacetimedb::reducer]
+pub fn move_all_players(ctx: &ReducerContext, _timer: MoveAllPlayersTimer) -> Result<(), String> {
+    let world_size = ctx
+        .db
+        .config()
+        .id()
+        .find(0)
+        .ok_or("Config not found")?
+        .world_size;
+
+    // Handle player input
+    for circle in ctx.db.circle().iter() {
+        let circle_entity = ctx.db.entity().entity_id().find(&circle.entity_id);
+        if !circle_entity.is_some() {
+            // This can happen if a circle is eaten by another circle
+            continue;
+        }
+        let mut circle_entity = circle_entity.unwrap();
+        let circle_radius = mass_to_radius(circle_entity.mass);
+        let direction = circle.direction * circle.speed;
+        let new_pos =
+            circle_entity.position + direction * mass_to_max_move_speed(circle_entity.mass);
+        let min = circle_radius;
+        let max = world_size as f32 - circle_radius;
+        circle_entity.position.x = new_pos.x.clamp(min, max);
+        circle_entity.position.y = new_pos.y.clamp(min, max);
+        ctx.db.entity().entity_id().update(circle_entity);
+    }
+
+    Ok(())
 }

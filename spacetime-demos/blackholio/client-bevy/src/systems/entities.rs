@@ -7,9 +7,9 @@ use crate::{
 
 pub fn spawn_circle(
     commands: &mut Commands,
-    circle: &Circle,
+    _circle: &Circle,
     entity: &DbEntity,
-    player_entity: Entity,
+    _player_entity: Entity,
     player_id: u32,
     username: &str,
 ) -> Entity {
@@ -47,7 +47,7 @@ pub fn spawn_circle(
 
 pub fn spawn_food(
     commands: &mut Commands,
-    food: &Food,
+    _food: &Food,
     entity: &DbEntity,
 ) -> Entity {
     let position: Vec2 = entity.position.clone().into();

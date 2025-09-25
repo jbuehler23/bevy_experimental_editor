@@ -12,12 +12,22 @@ pub mod config_table;
 pub mod config_type;
 pub mod connect_reducer;
 pub mod db_vector_2_type;
+pub mod disconnect_reducer;
+pub mod enter_game_reducer;
 pub mod entity_table;
 pub mod entity_type;
 pub mod food_table;
 pub mod food_type;
+pub mod logged_out_player_table;
+pub mod move_all_players_reducer;
+pub mod move_all_players_timer_table;
+pub mod move_all_players_timer_type;
 pub mod player_table;
 pub mod player_type;
+pub mod spawn_food_reducer;
+pub mod spawn_food_timer_table;
+pub mod spawn_food_timer_type;
+pub mod update_player_input_reducer;
 
 pub use circle_table::*;
 pub use circle_type::Circle;
@@ -25,12 +35,26 @@ pub use config_table::*;
 pub use config_type::Config;
 pub use connect_reducer::{connect, set_flags_for_connect, ConnectCallbackId};
 pub use db_vector_2_type::DbVector2;
+pub use disconnect_reducer::{disconnect, set_flags_for_disconnect, DisconnectCallbackId};
+pub use enter_game_reducer::{enter_game, set_flags_for_enter_game, EnterGameCallbackId};
 pub use entity_table::*;
 pub use entity_type::Entity;
 pub use food_table::*;
 pub use food_type::Food;
+pub use logged_out_player_table::*;
+pub use move_all_players_reducer::{
+    move_all_players, set_flags_for_move_all_players, MoveAllPlayersCallbackId,
+};
+pub use move_all_players_timer_table::*;
+pub use move_all_players_timer_type::MoveAllPlayersTimer;
 pub use player_table::*;
 pub use player_type::Player;
+pub use spawn_food_reducer::{set_flags_for_spawn_food, spawn_food, SpawnFoodCallbackId};
+pub use spawn_food_timer_table::*;
+pub use spawn_food_timer_type::SpawnFoodTimer;
+pub use update_player_input_reducer::{
+    set_flags_for_update_player_input, update_player_input, UpdatePlayerInputCallbackId,
+};
 
 #[derive(Clone, PartialEq, Debug)]
 
@@ -41,6 +65,11 @@ pub use player_type::Player;
 
 pub enum Reducer {
     Connect,
+    Disconnect,
+    EnterGame { name: String },
+    MoveAllPlayers { timer: MoveAllPlayersTimer },
+    SpawnFood { timer: SpawnFoodTimer },
+    UpdatePlayerInput { direction: DbVector2 },
 }
 
 impl __sdk::InModule for Reducer {
@@ -51,6 +80,11 @@ impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
             Reducer::Connect => "connect",
+            Reducer::Disconnect => "disconnect",
+            Reducer::EnterGame { .. } => "enter_game",
+            Reducer::MoveAllPlayers { .. } => "move_all_players",
+            Reducer::SpawnFood { .. } => "spawn_food",
+            Reducer::UpdatePlayerInput { .. } => "update_player_input",
         }
     }
 }
@@ -62,6 +96,35 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 "connect",
                 &value.args,
             )?
+            .into()),
+            "disconnect" => Ok(
+                __sdk::parse_reducer_args::<disconnect_reducer::DisconnectArgs>(
+                    "disconnect",
+                    &value.args,
+                )?
+                .into(),
+            ),
+            "enter_game" => Ok(
+                __sdk::parse_reducer_args::<enter_game_reducer::EnterGameArgs>(
+                    "enter_game",
+                    &value.args,
+                )?
+                .into(),
+            ),
+            "move_all_players" => Ok(__sdk::parse_reducer_args::<
+                move_all_players_reducer::MoveAllPlayersArgs,
+            >("move_all_players", &value.args)?
+            .into()),
+            "spawn_food" => Ok(
+                __sdk::parse_reducer_args::<spawn_food_reducer::SpawnFoodArgs>(
+                    "spawn_food",
+                    &value.args,
+                )?
+                .into(),
+            ),
+            "update_player_input" => Ok(__sdk::parse_reducer_args::<
+                update_player_input_reducer::UpdatePlayerInputArgs,
+            >("update_player_input", &value.args)?
             .into()),
             unknown => {
                 Err(
@@ -81,7 +144,10 @@ pub struct DbUpdate {
     config: __sdk::TableUpdate<Config>,
     entity: __sdk::TableUpdate<Entity>,
     food: __sdk::TableUpdate<Food>,
+    logged_out_player: __sdk::TableUpdate<Player>,
+    move_all_players_timer: __sdk::TableUpdate<MoveAllPlayersTimer>,
     player: __sdk::TableUpdate<Player>,
+    spawn_food_timer: __sdk::TableUpdate<SpawnFoodTimer>,
 }
 
 impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
@@ -102,9 +168,18 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "food" => db_update
                     .food
                     .append(food_table::parse_table_update(table_update)?),
+                "logged_out_player" => db_update
+                    .logged_out_player
+                    .append(logged_out_player_table::parse_table_update(table_update)?),
+                "move_all_players_timer" => db_update.move_all_players_timer.append(
+                    move_all_players_timer_table::parse_table_update(table_update)?,
+                ),
                 "player" => db_update
                     .player
                     .append(player_table::parse_table_update(table_update)?),
+                "spawn_food_timer" => db_update
+                    .spawn_food_timer
+                    .append(spawn_food_timer_table::parse_table_update(table_update)?),
 
                 unknown => {
                     return Err(__sdk::InternalError::unknown_name(
@@ -143,9 +218,21 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.food = cache
             .apply_diff_to_table::<Food>("food", &self.food)
             .with_updates_by_pk(|row| &row.entity_id);
+        diff.logged_out_player = cache
+            .apply_diff_to_table::<Player>("logged_out_player", &self.logged_out_player)
+            .with_updates_by_pk(|row| &row.identity);
+        diff.move_all_players_timer = cache
+            .apply_diff_to_table::<MoveAllPlayersTimer>(
+                "move_all_players_timer",
+                &self.move_all_players_timer,
+            )
+            .with_updates_by_pk(|row| &row.scheduled_id);
         diff.player = cache
             .apply_diff_to_table::<Player>("player", &self.player)
             .with_updates_by_pk(|row| &row.identity);
+        diff.spawn_food_timer = cache
+            .apply_diff_to_table::<SpawnFoodTimer>("spawn_food_timer", &self.spawn_food_timer)
+            .with_updates_by_pk(|row| &row.scheduled_id);
 
         diff
     }
@@ -159,7 +246,10 @@ pub struct AppliedDiff<'r> {
     config: __sdk::TableAppliedDiff<'r, Config>,
     entity: __sdk::TableAppliedDiff<'r, Entity>,
     food: __sdk::TableAppliedDiff<'r, Food>,
+    logged_out_player: __sdk::TableAppliedDiff<'r, Player>,
+    move_all_players_timer: __sdk::TableAppliedDiff<'r, MoveAllPlayersTimer>,
     player: __sdk::TableAppliedDiff<'r, Player>,
+    spawn_food_timer: __sdk::TableAppliedDiff<'r, SpawnFoodTimer>,
 }
 
 impl __sdk::InModule for AppliedDiff<'_> {
@@ -176,7 +266,22 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<Config>("config", &self.config, event);
         callbacks.invoke_table_row_callbacks::<Entity>("entity", &self.entity, event);
         callbacks.invoke_table_row_callbacks::<Food>("food", &self.food, event);
+        callbacks.invoke_table_row_callbacks::<Player>(
+            "logged_out_player",
+            &self.logged_out_player,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<MoveAllPlayersTimer>(
+            "move_all_players_timer",
+            &self.move_all_players_timer,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<Player>("player", &self.player, event);
+        callbacks.invoke_table_row_callbacks::<SpawnFoodTimer>(
+            "spawn_food_timer",
+            &self.spawn_food_timer,
+            event,
+        );
     }
 }
 
@@ -771,6 +876,9 @@ impl __sdk::SpacetimeModule for RemoteModule {
         config_table::register_table(client_cache);
         entity_table::register_table(client_cache);
         food_table::register_table(client_cache);
+        logged_out_player_table::register_table(client_cache);
+        move_all_players_timer_table::register_table(client_cache);
         player_table::register_table(client_cache);
+        spawn_food_timer_table::register_table(client_cache);
     }
 }

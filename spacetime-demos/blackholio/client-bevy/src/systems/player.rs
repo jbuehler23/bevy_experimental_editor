@@ -27,15 +27,15 @@ pub fn spawn_player(
 pub fn update_player_mass_ui(
     query: Query<&PlayerController>,
     entity_query: Query<(&EntityController, &CircleController)>,
-    entity_map: Res<EntityMap>,
+    _entity_map: Res<EntityMap>,
 ) {
     // This would be used to update UI elements showing player mass
     // For now, we'll just calculate the mass for logging purposes
     for player in query.iter() {
         if player.is_local {
-            let mut total_mass = 0u32;
+            let _total_mass = 0u32;
 
-            for (entity_controller, circle_controller) in entity_query.iter() {
+            for (_entity_controller, circle_controller) in entity_query.iter() {
                 if circle_controller.player_id == player.player_id {
                     // In a real implementation, we'd need to look up the mass from the entity data
                     // For now, this is a placeholder
@@ -44,7 +44,7 @@ pub fn update_player_mass_ui(
 
             // In Unity version, this would be displayed as GUI text
             // In Bevy, we'd spawn UI elements or use egui
-            info!("Player {} total mass: {}", player.username, total_mass);
+            info!("Player {} total mass: {}", player.username, _total_mass);
         }
     }
 }
@@ -78,11 +78,11 @@ pub fn calculate_player_center_of_mass(
 }
 
 pub fn handle_player_death(
-    mut commands: Commands,
+    _commands: Commands,
     player_query: Query<(Entity, &PlayerController)>,
     circle_query: Query<&CircleController>,
 ) {
-    for (player_entity, player_controller) in player_query.iter() {
+    for (_player_entity, player_controller) in player_query.iter() {
         if player_controller.is_local {
             // Check if player has any circles left
             let has_circles = circle_query.iter()

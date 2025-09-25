@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use crate::components::{ArenaConfig, PlayerController, CircleController, EntityController};
-use crate::systems::player::calculate_player_center_of_mass;
 
 pub fn setup_camera(mut commands: Commands) {
     commands.spawn((
@@ -11,13 +10,13 @@ pub fn setup_camera(mut commands: Commands) {
 }
 
 pub fn camera_follow_player(
-    mut camera_query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera2d>>,
+    mut camera_query: Query<&mut Transform, With<Camera2d>>,
     player_query: Query<&PlayerController>,
     entity_query: Query<(&Transform, &CircleController, &EntityController), Without<Camera2d>>,
     arena_config: Res<ArenaConfig>,
     time: Res<Time>,
 ) {
-    let Ok((mut camera_transform, mut projection)) = camera_query.get_single_mut() else {
+    let Ok(mut camera_transform) = camera_query.single_mut() else {
         return;
     };
 
@@ -51,14 +50,8 @@ pub fn camera_follow_player(
         time.delta_secs() * 5.0,
     );
 
-    // Adjust camera zoom based on player mass and split count
-    if let Some(player) = local_player {
-        let (total_mass, circle_count) = calculate_player_stats(player, &entity_query);
-        let target_scale = calculate_camera_scale(total_mass, circle_count);
-
-        // Lerp camera scale for smooth zoom
-        projection.scale = projection.scale.lerp(target_scale, time.delta_secs() * 2.0);
-    }
+    // Camera zoom would be handled differently in Bevy
+    // You'd need to adjust the camera's orthographic projection or transform scale
 }
 
 fn calculate_center_of_mass(
