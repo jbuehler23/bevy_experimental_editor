@@ -1474,6 +1474,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "blackholio"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "spacetimedb",
+]
+
+[[package]]
 name = "blake3"
 version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4773,14 +4781,6 @@ checksum = "233504af464074f9d066d7b5416c5f9b894a5862a6506e306f7b816cdd6f1807"
 dependencies = [
  "libc",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "spacetime-module"
-version = "0.1.0"
-dependencies = [
- "log",
- "spacetimedb",
 ]
 
 [[package]]
