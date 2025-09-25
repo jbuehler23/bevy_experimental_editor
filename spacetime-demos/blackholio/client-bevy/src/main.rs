@@ -9,6 +9,7 @@ use stdb::DbConnection;
 use crate::stdb::circle_table::CircleTableAccess;
 use crate::stdb::config_table::ConfigTableAccess;
 use crate::stdb::enter_game_reducer::enter_game;
+use crate::stdb::update_player_input_reducer::update_player_input;
 use crate::stdb::entity_table::EntityTableAccess;
 use crate::stdb::food_table::FoodTableAccess;
 use crate::stdb::player_table::PlayerTableAccess;
@@ -84,6 +85,8 @@ pub fn main() {
                 update_entity_positions,
                 camera_follow_player,
                 handle_player_death,
+                handle_keyboard_input,
+                handle_mouse_input_and_send_updates,
             ),
         )
         .run();

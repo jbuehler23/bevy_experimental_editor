@@ -14,12 +14,22 @@ pub fn spawn_player(
         false
     };
 
-    let player_entity = commands.spawn((
+    let player_bundle = (
         PlayerController::new(player.player_id, player.name.clone(), is_local),
         Name::new(format!("Player-{}", player.name)),
         // Players don't have a visual representation themselves, just their circles
         Transform::default(),
-    )).id();
+    );
+
+    let player_entity = if is_local {
+        // Add input state for local player
+        commands.spawn((
+            player_bundle,
+            PlayerInputState::default(),
+        )).id()
+    } else {
+        commands.spawn(player_bundle).id()
+    };
 
     player_entity
 }

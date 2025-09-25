@@ -106,3 +106,20 @@ impl Default for PlayerMap {
         }
     }
 }
+
+#[derive(Component)]
+pub struct PlayerInputState {
+    pub last_movement_send_timestamp: f32,
+    pub lock_input_position: Option<Vec2>,
+    pub send_updates_frequency: f32, // 1/20 = 0.05 seconds (50ms)
+}
+
+impl Default for PlayerInputState {
+    fn default() -> Self {
+        Self {
+            last_movement_send_timestamp: 0.0,
+            lock_input_position: None,
+            send_updates_frequency: 1.0 / 20.0, // 20 FPS like Unity
+        }
+    }
+}
