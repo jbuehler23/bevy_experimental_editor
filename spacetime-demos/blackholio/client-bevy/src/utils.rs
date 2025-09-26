@@ -52,7 +52,3 @@ pub fn mass_to_diameter(mass: u32) -> f32 {
     mass_to_radius(mass) * 2.0
 }
 
-pub fn mass_to_scale(mass: u32) -> Vec3 {
-    let diameter = mass_to_diameter(mass);
-    Vec3::new(diameter, diameter, 1.0)
-}

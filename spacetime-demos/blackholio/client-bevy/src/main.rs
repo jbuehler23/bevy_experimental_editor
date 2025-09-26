@@ -9,7 +9,6 @@ use stdb::DbConnection;
 use crate::stdb::circle_table::CircleTableAccess;
 use crate::stdb::config_table::ConfigTableAccess;
 use crate::stdb::enter_game_reducer::enter_game;
-use crate::stdb::update_player_input_reducer::update_player_input;
 use crate::stdb::entity_table::EntityTableAccess;
 use crate::stdb::food_table::FoodTableAccess;
 use crate::stdb::player_table::PlayerTableAccess;
@@ -28,6 +27,9 @@ pub type SpacetimeDB<'a> = Res<'a, StdbConnection<DbConnection>>;
 #[derive(Resource)]
 pub struct LocalIdentity(pub Option<Identity>);
 
+#[derive(Resource)]
+pub struct Username(pub String);
+
 // Simplified subscription state - just tracking if we've entered the game
 #[derive(Resource, Default)]
 pub struct SubscriptionState {
@@ -35,6 +37,16 @@ pub struct SubscriptionState {
 }
 
 pub fn main() {
+    // Parse command-line arguments for username
+    let args: Vec<String> = std::env::args().collect();
+    let username = if args.len() > 1 {
+        args[1].clone()
+    } else {
+        "Player".to_string()
+    };
+
+    info!("Starting game with username: {}", username);
+
     App::new()
         // Core plugins - using DefaultPlugins for rendering
         .add_plugins(DefaultPlugins.set(LogPlugin {
@@ -59,6 +71,7 @@ pub fn main() {
         .init_resource::<PlayerMap>()
         .insert_resource(LocalPlayerEntity(None))
         .insert_resource(LocalIdentity(None))
+        .insert_resource(Username(username))
         .init_resource::<SubscriptionState>()
         // Setup systems
         .add_systems(Startup, setup_camera)
@@ -97,17 +110,21 @@ fn on_connected(
     stdb: SpacetimeDB,
     mut local_identity: ResMut<LocalIdentity>,
     mut subscription_state: ResMut<SubscriptionState>,
+    username: Res<Username>,
 ) {
     for ev in events.read() {
         info!("Connected to SpacetimeDB with identity: {:?}", ev.identity);
         local_identity.0 = Some(ev.identity.clone());
 
+        // Clone username for the closure
+        let player_name = username.0.clone();
+
         // Subscribe to config first to get world size - this is the critical one
         stdb.subscription_builder()
-            .on_applied(|ctx| {
-                info!("Subscription to config applied - calling enter_game!");
+            .on_applied(move |ctx| {
+                info!("Subscription to config applied - calling enter_game with username: {}!", player_name);
                 // Call enter_game as soon as config is available, like Unity does
-                if let Err(err) = ctx.reducers.enter_game("Joe".to_string()) {
+                if let Err(err) = ctx.reducers.enter_game(player_name.clone()) {
                     error!("Failed to call enter_game reducer: {}", err);
                 } else {
                     info!("Successfully called enter_game reducer");
@@ -273,7 +290,6 @@ fn on_entity_updated(
                 controller.lerp_time = 0.0;
                 controller.lerp_start = controller.lerp_target;
                 controller.lerp_target = new_position.extend(0.0);
-                controller.target_scale = utils::mass_to_scale(event.new.mass);
 
                 // Update sprite size
                 sprite.custom_size = Some(Vec2::splat(utils::mass_to_diameter(event.new.mass)));

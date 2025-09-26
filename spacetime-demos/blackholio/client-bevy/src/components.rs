@@ -7,7 +7,6 @@ pub struct EntityController {
     pub lerp_time: f32,
     pub lerp_start: Vec3,
     pub lerp_target: Vec3,
-    pub target_scale: Vec3,
 }
 
 impl EntityController {
@@ -18,7 +17,6 @@ impl EntityController {
             lerp_time: 0.0,
             lerp_start: pos3,
             lerp_target: pos3,
-            target_scale: Vec3::ONE,
         }
     }
 }
@@ -111,6 +109,7 @@ impl Default for PlayerMap {
 pub struct PlayerInputState {
     pub last_movement_send_timestamp: f32,
     pub lock_input_position: Option<Vec2>,
+    pub current_mouse_position: Vec2,
     pub send_updates_frequency: f32, // 1/20 = 0.05 seconds (50ms)
 }
 
@@ -119,6 +118,7 @@ impl Default for PlayerInputState {
         Self {
             last_movement_send_timestamp: 0.0,
             lock_input_position: None,
+            current_mouse_position: Vec2::new(400.0, 300.0), // Default to reasonable center position
             send_updates_frequency: 1.0 / 20.0, // 20 FPS like Unity
         }
     }

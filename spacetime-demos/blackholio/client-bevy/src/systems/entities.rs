@@ -76,34 +76,6 @@ pub fn update_entity_positions(
         let t = controller.lerp_time / LERP_DURATION;
 
         transform.translation = controller.lerp_start.lerp(controller.lerp_target, t);
-
-        // Smoothly interpolate scale
-        let current_scale = transform.scale;
-        transform.scale = current_scale.lerp(controller.target_scale, time.delta_secs() * 8.0);
     }
 }
 
-pub fn handle_entity_update(
-    entity_id: u32,
-    new_position: Vec2,
-    new_mass: u32,
-    mut query: Query<(&mut EntityController, &mut Sprite)>,
-) {
-    for (mut controller, mut sprite) in query.iter_mut() {
-        if controller.entity_id == entity_id {
-            // Update lerp targets
-            controller.lerp_time = 0.0;
-            controller.lerp_start = Vec3::new(
-                controller.lerp_target.x,
-                controller.lerp_target.y,
-                0.0,
-            );
-            controller.lerp_target = new_position.extend(0.0);
-            controller.target_scale = mass_to_scale(new_mass);
-
-            // Update sprite size
-            sprite.custom_size = Some(Vec2::splat(mass_to_diameter(new_mass)));
-            break;
-        }
-    }
-}

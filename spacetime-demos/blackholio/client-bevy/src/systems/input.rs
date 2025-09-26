@@ -9,19 +9,18 @@ pub fn handle_keyboard_input(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut player_query: Query<(&PlayerController, &mut PlayerInputState)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
-    mut cursor_moved_events: EventReader<CursorMoved>,
+    _cursor_moved_events: EventReader<CursorMoved>,
 ) {
     if keyboard_input.just_pressed(KeyCode::KeyQ) {
-        let Ok(window) = window_query.get_single() else {
+        let Ok(window) = window_query.single() else {
             return;
         };
 
-        // Get current mouse position
-        let mouse_position = if let Some(cursor_event) = cursor_moved_events.read().last() {
-            cursor_event.position
-        } else {
-            Vec2::new(window.width() / 2.0, window.height() / 2.0)
-        };
+        // Get current mouse position from the current player's state, or use center if not available yet
+        let mouse_position = player_query.iter()
+            .find(|(p, _)| p.is_local)
+            .map(|(_, state)| state.current_mouse_position)
+            .unwrap_or_else(|| Vec2::new(window.width() / 2.0, window.height() / 2.0));
 
         // Find the local player and toggle input lock
         for (player_controller, mut input_state) in player_query.iter_mut() {
@@ -52,19 +51,21 @@ pub fn handle_mouse_input_and_send_updates(
         return;
     };
 
-    // Get current mouse position - use the latest cursor moved event or default to center
-    let mouse_position = if let Some(cursor_event) = cursor_moved_events.read().last() {
-        cursor_event.position
-    } else {
-        // Default to center if no mouse movement yet
-        Vec2::new(window.width() / 2.0, window.height() / 2.0)
-    };
-
-    // Find the local player
+    // Find the local player first so we can update mouse position
     for (player_controller, mut input_state) in player_query.iter_mut() {
         if !player_controller.is_local {
             continue;
         }
+
+        // Update mouse position if there are new cursor events
+        if let Some(cursor_event) = cursor_moved_events.read().last() {
+            input_state.current_mouse_position = cursor_event.position;
+        }
+        // Initialize with window center if this is the first time and position is still default
+        else if input_state.current_mouse_position == Vec2::new(400.0, 300.0) {
+            input_state.current_mouse_position = Vec2::new(window.width() / 2.0, window.height() / 2.0);
+        }
+        // If no new events, keep using the last known position
 
         // Check if player has any circles (like Unity's NumberOfOwnedCircles == 0 check)
         let has_circles = circle_query.iter()
@@ -80,7 +81,7 @@ pub fn handle_mouse_input_and_send_updates(
             input_state.last_movement_send_timestamp = current_time;
 
             // Use locked position or current mouse position
-            let effective_mouse_position = input_state.lock_input_position.unwrap_or(mouse_position);
+            let effective_mouse_position = input_state.lock_input_position.unwrap_or(input_state.current_mouse_position);
 
             // Convert to direction like Unity does
             let screen_size = Vec2::new(window.width(), window.height());
