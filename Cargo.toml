@@ -1,21 +1,19 @@
-[package]
-name = "eryndor"
-version = "0.1.0"
-edition = "2024"
-authors = ["Joe Buehler <jbuehler23@gmail.com>"]
-
-
 [workspace]
 members = [
     "spacetime-demos/blackholio/server-rust",
     "spacetime-demos/blackholio/client-bevy",
-    "crates/eryndor-server",
+    "crates/eryndor-server-spacetimedb",
     "crates/eryndor-client",
+    "crates/eryndor-common", "crates/eryndor-editor",
+]
+exclude = [
+    "spacetime-demos/ldtk/platformer-server",
+    "spacetime-demos/ldtk/platformer-client",
 ]
 resolver = "2"
 
 [workspace.dependencies]
-bevy = { version = "0.17.0-rc", default-features = false, features = [
+bevy = { version = "0.16.0", default-features = false, features = [
   "std",
   "bevy_log",
   "dynamic_linking",
@@ -24,6 +22,15 @@ bevy = { version = "0.17.0-rc", default-features = false, features = [
   "track_location",
   "file_watcher",
   "embedded_watcher",
+  "multi_threaded",
+  "bevy_sprite",
+  "bevy_render",
+  "bevy_core_pipeline",
+  "bevy_text",
+  "bevy_ui",
+  "bevy_winit",
+  "bevy_gizmos",
+  "png",
 ] }
 spacetimedb-sdk = { version = "1.3.0" }
 

@@ -1,0 +1,27 @@
+[package]
+name = "eryndor-editor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { workspace = true }
+eryndor-common = { path = "../eryndor-common" }
+
+# Editor-specific dependencies
+bevy-inspector-egui = "0.31"
+bevy_egui = "0.34"  # Version 0.34 uses egui 0.31, avoiding the 0.32 API breaking changes
+bevy_pancam = "0.18"
+bevy_ecs_tilemap = "0.16"
+
+# File dialogs
+rfd = "0.15"
+
+# Image loading for tilesets
+image = "0.25"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[lints]
+workspace = true

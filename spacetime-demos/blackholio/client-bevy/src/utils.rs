@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::stdb::DbVector2;
+use bevy::prelude::*;
 
 pub const LERP_DURATION: f32 = 0.1;
 
@@ -51,4 +51,3 @@ pub fn mass_to_radius(mass: u32) -> f32 {
 pub fn mass_to_diameter(mass: u32) -> f32 {
     mass_to_radius(mass) * 2.0
 }
-

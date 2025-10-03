@@ -1,0 +1,205 @@
+{
+  "metadata": {
+    "name": "Untitled Level",
+    "version": "1.0",
+    "author": null,
+    "description": null
+  },
+  "platforms": [],
+  "entities": [],
+  "world_bounds": {
+    "min": {
+      "x": 0.0,
+      "y": 0.0
+    },
+    "max": {
+      "x": 2000.0,
+      "y": 1000.0
+    }
+  },
+  "background_layers": [],
+  "tilemap": {
+    "grid_size": 16.0,
+    "map_width": 64,
+    "map_height": 64,
+    "tilesets": [
+      {
+        "id": 4,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 6,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 11,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 14,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 13,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 12,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 18,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 19,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 22,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 2,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 9,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 23,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 8,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 10,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 3,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 7,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 0,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 20,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 17,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 21,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 15,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 16,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 5,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      },
+      {
+        "id": 1,
+        "identifier": "test_tileset",
+        "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
+        "tile_width": 16,
+        "tile_height": 16
+      }
+    ],
+    "selected_tileset_id": 5,
+    "layers": [
+      {
+        "id": 0,
+        "name": "Layer 0",
+        "visible": true,
+        "tiles": []
+      }
+    ]
+  }
+}
