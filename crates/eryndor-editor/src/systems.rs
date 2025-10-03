@@ -137,6 +137,8 @@ pub fn handle_save_load(
     mut pending_restore: ResMut<PendingTilemapRestore>,
     mut commands: Commands,
     existing_canvas: Query<Entity, With<crate::map_canvas::MapCanvas>>,
+    current_project: Option<Res<crate::project_manager::CurrentProject>>,
+    mut build_manager: ResMut<crate::build_manager::BuildManager>,
 ) {
     // Ctrl+S to save
     if keyboard.pressed(KeyCode::ControlLeft) && keyboard.just_pressed(KeyCode::KeyS) {
@@ -150,6 +152,14 @@ pub fn handle_save_load(
                 &tilemap_query,
                 &tile_query,
             );
+
+            // Trigger background build after successful save
+            if let Some(project) = current_project.as_ref() {
+                if let Ok(package_name) = crate::project_generator::get_package_name_from_cargo_toml(project.root_path()) {
+                    info!("Starting background build after save...");
+                    build_manager.start_build(project.root_path().clone(), package_name);
+                }
+            }
         } else {
             // No path set, show Save As dialog
             save_as_dialog_with_tilemap(

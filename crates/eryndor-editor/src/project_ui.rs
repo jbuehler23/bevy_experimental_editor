@@ -106,33 +106,12 @@ pub fn play_controls_ui(
                     if ui.button("▶ Run").clicked() {
                         let project_path = project.root_path().clone();
 
-                        // Get package name
-                        match get_package_name_from_cargo_toml(&project_path) {
-                            Ok(package_name) => {
-                                // Check if exe exists
-                                let exe_name = if cfg!(windows) {
-                                    format!("{}.exe", package_name)
-                                } else {
-                                    package_name.clone()
-                                };
-                                let exe_path = project_path.join("target").join("debug").join(&exe_name);
-
-                                if !exe_path.exists() {
-                                    // Start async build
-                                    build_manager.start_build(project_path, package_name);
-                                } else {
-                                    // Launch directly with current scene path if available
-                                    let level_path = current_level.as_ref()
-                                        .and_then(|level| level.file_path.clone());
-                                    match client.launch(project_path, level_path) {
-                                        Ok(_) => info!("Game launched successfully"),
-                                        Err(e) => error!("Failed to launch game: {}", e),
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                error!("Failed to get package name: {}", e);
-                            }
+                        // Just launch - cargo run handles everything
+                        let level_path = current_level.as_ref()
+                            .and_then(|level| level.file_path.clone());
+                        match client.launch(project_path, level_path) {
+                            Ok(_) => info!("Game launched successfully"),
+                            Err(e) => error!("Failed to launch game: {}", e),
                         }
                     }
                 }

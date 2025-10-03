@@ -23,6 +23,7 @@ impl Default for ProjectTemplate {
 pub fn project_wizard_ui(
     mut contexts: EguiContexts,
     mut wizard: ResMut<ProjectWizard>,
+    mut build_manager: ResMut<crate::build_manager::BuildManager>,
     mut selection: ResMut<ProjectSelection>,
 ) {
     if !wizard.show_wizard {
@@ -88,6 +89,12 @@ pub fn project_wizard_ui(
                     ) {
                         Ok(_) => {
                             info!("Project created successfully at: {:?}", project_path);
+
+                            // Start initial background build
+                            if let Ok(package_name) = crate::project_generator::get_package_name_from_cargo_toml(&project_path) {
+                                info!("Starting initial background build for new project...");
+                                build_manager.start_build(project_path.clone(), package_name);
+                            }
 
                             // Trigger project opening
                             selection.state = ProjectSelectionState::Opening {

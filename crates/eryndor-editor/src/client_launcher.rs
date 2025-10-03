@@ -52,35 +52,18 @@ impl StandaloneClient {
         // Kill existing process if running
         self.stop();
 
-        // Get the package name from Cargo.toml
-        let package_name = get_package_name_from_cargo_toml(&project_path)?;
-        info!("Project package name: {}", package_name);
+        let cargo_toml = project_path.join("Cargo.toml");
 
-        // Determine executable name
-        let exe_name = if cfg!(windows) {
-            format!("{}.exe", package_name)
-        } else {
-            package_name.clone()
-        };
+        info!("Launching game with cargo run from: {:?}", project_path);
 
-        // Look for the executable in the project's target directory
-        let exe_path = project_path.join("target").join("debug").join(&exe_name);
+        // Use cargo run instead of direct exe - this ensures we always have latest build
+        let mut cmd = Command::new("cargo");
+        cmd.arg("run")
+           .arg("--manifest-path")
+           .arg(&cargo_toml)
+           .arg("--");  // Separator between cargo args and binary args
 
-        // Build the project if executable doesn't exist
-        if !exe_path.exists() {
-            info!("Executable not found at {:?}, building project...", exe_path);
-            Self::build_project(&project_path)?;
-
-            // Check again after build
-            if !exe_path.exists() {
-                return Err(format!("Executable still not found after build: {:?}", exe_path).into());
-            }
-        }
-
-        info!("Using executable at: {:?}", exe_path);
-
-        // Build command
-        let mut cmd = Command::new(&exe_path);
+        // Pass project path and level path as arguments to the binary
         cmd.arg("--project-path").arg(&project_path);
 
         if let Some(level) = level_path {
@@ -90,8 +73,6 @@ impl StandaloneClient {
         // Spawn with output inherited so we can see logs
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
-
-        info!("Launching project: {} at {:?}", package_name, project_path);
 
         match cmd.spawn() {
             Ok(child) => {
