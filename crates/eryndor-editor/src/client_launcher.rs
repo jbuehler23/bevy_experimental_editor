@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use std::process::{Child, Command, Stdio};
 use std::path::PathBuf;
+use crate::project_generator::get_package_name_from_cargo_toml;
 
 /// Resource to manage the standalone client process
 #[derive(Resource)]
@@ -19,20 +20,30 @@ impl Default for StandaloneClient {
 }
 
 impl StandaloneClient {
-    /// Build the client executable if it doesn't exist
-    fn ensure_client_built() -> Result<(), Box<dyn std::error::Error>> {
-        info!("Building client executable...");
+    /// Build the project's client executable
+    fn build_project(project_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        info!("Building project at {:?}...", project_path);
+        info!("This may take a few minutes for the first build...");
 
-        let output = Command::new("cargo")
-            .args(["build", "-p", "eryndor-client"])
-            .output()?;
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(format!("Failed to build client: {}", stderr).into());
+        let cargo_toml = project_path.join("Cargo.toml");
+        if !cargo_toml.exists() {
+            return Err(format!("No Cargo.toml found at {:?}", cargo_toml).into());
         }
 
-        info!("Client built successfully");
+        // Use spawn + wait with inherited stdio to show build progress in real-time
+        let status = Command::new("cargo")
+            .arg("build")
+            .arg("--manifest-path")
+            .arg(&cargo_toml)
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()?;
+
+        if !status.success() {
+            return Err("Failed to build project (see output above)".into());
+        }
+
+        info!("Project built successfully!");
         Ok(())
     }
 
@@ -41,45 +52,35 @@ impl StandaloneClient {
         // Kill existing process if running
         self.stop();
 
-        // Get the client executable path
-        // In development, it's in target/debug/eryndor-client
+        // Get the package name from Cargo.toml
+        let package_name = get_package_name_from_cargo_toml(&project_path)?;
+        info!("Project package name: {}", package_name);
+
+        // Determine executable name
         let exe_name = if cfg!(windows) {
-            "eryndor-client.exe"
+            format!("{}.exe", package_name)
         } else {
-            "eryndor-client"
+            package_name.clone()
         };
 
-        // Build path from workspace root (go up from crates/eryndor-editor)
-        let client_path = PathBuf::from("../../target/debug").join(exe_name);
+        // Look for the executable in the project's target directory
+        let exe_path = project_path.join("target").join("debug").join(&exe_name);
 
-        // Normalize the path
-        let client_path = if client_path.exists() {
-            client_path
-        } else {
-            // Try relative to current directory
-            let alt_path = PathBuf::from("target").join("debug").join(exe_name);
-            if alt_path.exists() {
-                alt_path
-            } else {
-                // Build the client
-                info!("Client executable not found, building...");
-                Self::ensure_client_built()?;
+        // Build the project if executable doesn't exist
+        if !exe_path.exists() {
+            info!("Executable not found at {:?}, building project...", exe_path);
+            Self::build_project(&project_path)?;
 
-                // Check again
-                if alt_path.exists() {
-                    alt_path
-                } else if client_path.exists() {
-                    client_path
-                } else {
-                    return Err(format!("Client executable still not found after build. Tried: {:?} and {:?}", client_path, alt_path).into());
-                }
+            // Check again after build
+            if !exe_path.exists() {
+                return Err(format!("Executable still not found after build: {:?}", exe_path).into());
             }
-        };
+        }
 
-        info!("Using client executable at: {:?}", client_path);
+        info!("Using executable at: {:?}", exe_path);
 
         // Build command
-        let mut cmd = Command::new(&client_path);
+        let mut cmd = Command::new(&exe_path);
         cmd.arg("--project-path").arg(&project_path);
 
         if let Some(level) = level_path {
@@ -90,18 +91,18 @@ impl StandaloneClient {
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
 
-        info!("Launching client with project: {:?}", project_path);
+        info!("Launching project: {} at {:?}", package_name, project_path);
 
         match cmd.spawn() {
             Ok(child) => {
-                info!("Client process started with PID: {:?}", child.id());
+                info!("Process started with PID: {:?}", child.id());
                 self.process = Some(child);
                 self.is_running = true;
                 Ok(())
             }
             Err(e) => {
-                error!("Failed to launch client: {}", e);
-                Err(format!("Failed to launch client: {}", e).into())
+                error!("Failed to launch project: {}", e);
+                Err(format!("Failed to launch project: {}", e).into())
             }
         }
     }

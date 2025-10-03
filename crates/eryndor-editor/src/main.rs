@@ -20,6 +20,8 @@ mod map_canvas;
 mod project_manager;
 mod client_launcher;
 mod project_ui;
+mod project_generator;
+mod project_wizard;
 
 use camera::*;
 use gizmos::*;
@@ -37,6 +39,7 @@ use collision_editor::*;
 use project_manager::*;
 use client_launcher::*;
 use project_ui::*;
+use project_wizard::*;
 
 fn main() {
     App::new()
@@ -68,6 +71,7 @@ fn main() {
         .init_resource::<systems::PendingTilemapRestore>()
         // Project resources
         .init_resource::<ProjectSelection>()
+        .init_resource::<ProjectWizard>()
         .init_resource::<StandaloneClient>()
         // Tilemap resources
         .init_resource::<TilesetManager>()
@@ -86,6 +90,7 @@ fn main() {
         .add_systems(Update, (
             handle_project_selection,
             project_selection_ui,
+            project_wizard_ui,
             play_controls_ui,
             monitor_client_process,
             ui_system,
