@@ -17,6 +17,9 @@ mod layer_panel;
 mod tile_painter;
 mod collision_editor;
 mod map_canvas;
+mod project_manager;
+mod client_launcher;
+mod project_ui;
 
 use camera::*;
 use gizmos::*;
@@ -31,6 +34,9 @@ use layer_panel::*;
 use tile_painter::*;
 use map_canvas::*;
 use collision_editor::*;
+use project_manager::*;
+use client_launcher::*;
+use project_ui::*;
 
 fn main() {
     App::new()
@@ -60,6 +66,9 @@ fn main() {
         .init_resource::<Selection>()
         .init_resource::<EditorEntityMap>()
         .init_resource::<systems::PendingTilemapRestore>()
+        // Project resources
+        .init_resource::<ProjectSelection>()
+        .init_resource::<StandaloneClient>()
         // Tilemap resources
         .init_resource::<TilesetManager>()
         .init_resource::<tileset_panel::TilesetZoom>()
@@ -75,6 +84,10 @@ fn main() {
         // Systems - Split into smaller groups to avoid tuple size limit
         .add_systems(Startup, setup_editor)
         .add_systems(Update, (
+            handle_project_selection,
+            project_selection_ui,
+            play_controls_ui,
+            monitor_client_process,
             ui_system,
             tileset_panel_ui,
             layer_panel_ui,

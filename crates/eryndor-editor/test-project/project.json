@@ -1,0 +1,13 @@
+{
+  "name": "Test Project",
+  "version": "0.1.0",
+  "author": null,
+  "description": null,
+  "client_config": {
+    "window_title": "Test Project",
+    "window_width": 1280,
+    "window_height": 720,
+    "asset_watch": true,
+    "default_level": "world/level1.json"
+  }
+}
