@@ -23,6 +23,8 @@ mod project_ui;
 mod project_generator;
 mod project_wizard;
 mod build_manager;
+mod shortcuts;
+mod toolbar;
 
 use camera::*;
 use gizmos::*;
@@ -42,6 +44,8 @@ use client_launcher::*;
 use project_ui::*;
 use project_wizard::*;
 use build_manager::*;
+use shortcuts::*;
+use toolbar::*;
 
 fn main() {
     App::new()
@@ -90,6 +94,8 @@ fn main() {
         .add_event::<PaintTileEvent>()
         // Systems - Split into smaller groups to avoid tuple size limit
         .add_systems(Startup, setup_editor)
+        // Keyboard shortcuts MUST run before UI to capture shortcuts
+        .add_systems(Update, handle_global_shortcuts)
         .add_systems(Update, (
             handle_project_selection,
             project_selection_ui,
@@ -98,6 +104,7 @@ fn main() {
             monitor_client_process,
             poll_build_status,
             ui_system,
+            toolbar_ui,
             tileset_panel_ui,
             layer_panel_ui,
             disable_pancam_over_ui.after(tileset_panel_ui).after(ui_system),
@@ -105,7 +112,7 @@ fn main() {
             handle_entity_placement,
             handle_save_load,
             handle_platform_editing,
-        ))
+        ).after(handle_global_shortcuts))
         .add_systems(Update, (
             handle_selection,
             handle_entity_deletion,
@@ -203,6 +210,7 @@ pub enum EditorTool {
     Platform,
     EntityPlace,
     Erase,
+    Eyedropper,
 }
 
 #[derive(Resource)]
