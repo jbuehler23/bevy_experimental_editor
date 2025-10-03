@@ -205,14 +205,17 @@ fn save_level_with_tilemap(
         layers: Vec::new(),
     };
 
-    // Save tilesets - deduplicate by texture_path
+    // Save tilesets - deduplicate by texture_path and convert to relative paths
     let mut seen_paths = HashSet::new();
     for (id, tileset_info) in tileset_manager.tilesets.iter() {
         if seen_paths.insert(tileset_info.data.texture_path.clone()) {
+            // Convert absolute path to relative path for portability
+            let relative_path = convert_to_relative_asset_path(&tileset_info.data.texture_path);
+
             tilemap_data.tilesets.push(LevelTilesetData {
                 id: *id,
                 identifier: tileset_info.data.identifier.clone(),
-                texture_path: tileset_info.data.texture_path.clone(),
+                texture_path: relative_path,
                 tile_width: tileset_info.data.tile_width,
                 tile_height: tileset_info.data.tile_height,
             });
@@ -429,6 +432,19 @@ fn snap_to_grid(pos: Vec2, grid_size: f32) -> Vec2 {
         (pos.x / grid_size).round() * grid_size,
         (pos.y / grid_size).round() * grid_size,
     )
+}
+
+/// Convert absolute asset path to relative path from assets folder
+fn convert_to_relative_asset_path(absolute_path: &str) -> String {
+    // Find "assets" in the path and return everything after it
+    if let Some(idx) = absolute_path.find("assets") {
+        // Skip "assets/" or "assets\" to get the relative path
+        let relative = &absolute_path[idx + 7..]; // "assets/" is 7 chars
+        return relative.replace('\\', "/"); // Normalize to forward slashes
+    }
+
+    // Fallback: return the original path if "assets" not found
+    absolute_path.to_string()
 }
 
 fn create_spawn_config_for_type(entity_type: EntityType, position: Vector2) -> EntitySpawnConfig {

@@ -24,14 +24,14 @@
     "map_height": 64,
     "tilesets": [
       {
-        "id": 1,
+        "id": 0,
         "identifier": "test_tileset",
         "texture_path": "C:\\Dev\\Workspace\\eryndor-mmo\\crates\\eryndor-editor\\assets\\tilesets\\test_tileset.png",
         "tile_width": 16,
         "tile_height": 16
       }
     ],
-    "selected_tileset_id": 1,
+    "selected_tileset_id": 0,
     "layers": [
       {
         "id": 0,
