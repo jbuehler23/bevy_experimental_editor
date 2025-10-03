@@ -42,7 +42,7 @@ pub fn generate_project(
     // Generate Cargo.toml
     generate_cargo_toml(project_path, project_name, &template)?;
 
-    // Generate project.json (editor config)
+    // Generate project.bvy (editor config)
     generate_project_config(project_path, project_name)?;
 
     // Generate main.rs
@@ -63,11 +63,15 @@ fn create_directory_structure(project_path: &Path) -> Result<(), Box<dyn std::er
         "assets/world",
         "assets/sprites",
         "assets/audio",
+        ".cargo",
     ];
 
     for dir in dirs {
         fs::create_dir_all(project_path.join(dir))?;
     }
+
+    // Create .cargo/config.toml to optimize builds for memory usage
+    generate_cargo_config(project_path)?;
 
     Ok(())
 }
@@ -125,7 +129,7 @@ opt-level = 3  # Optimize dependencies for better performance
     Ok(())
 }
 
-/// Generate project.json (editor configuration)
+/// Generate project.bvy (editor configuration)
 fn generate_project_config(
     project_path: &Path,
     project_name: &str,
@@ -133,7 +137,7 @@ fn generate_project_config(
     let mut config = ProjectConfig::new(project_name.to_string());
     config.client_config.window_title = project_name.to_string();
 
-    let config_path = project_path.join("project.json");
+    let config_path = project_path.join("project.bvy");
     config.save_to_file(config_path)?;
 
     Ok(())
@@ -257,6 +261,43 @@ Cargo.lock
 "#;
 
     fs::write(project_path.join(".gitignore"), gitignore)?;
+
+    Ok(())
+}
+
+/// Generate .cargo/config.toml to optimize build performance and reduce memory usage
+fn generate_cargo_config(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let cargo_config = r#"# Cargo configuration for optimized Bevy builds
+# This reduces memory usage during compilation
+
+[build]
+# Use a single codegen unit to reduce memory usage (slower but uses less RAM)
+# Increase this number if you have more RAM available
+# codegen-units = 1
+
+[profile.dev]
+# Optimize dependencies even in dev mode to reduce memory usage
+opt-level = 1
+
+[profile.dev.package."*"]
+# Optimize all dependencies in dev mode
+opt-level = 3
+
+# Use LLD linker for faster builds (Windows/Linux)
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld"
+
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# Reduce parallel jobs to prevent OOM on machines with limited RAM
+# Uncomment and adjust if you're still running out of memory
+# [build]
+# jobs = 4
+"#;
+
+    fs::write(project_path.join(".cargo/config.toml"), cargo_config)?;
 
     Ok(())
 }

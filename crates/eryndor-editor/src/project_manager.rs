@@ -20,8 +20,8 @@ impl CurrentProject {
         let mut config = ProjectConfig::new(name.clone());
         config.client_config.window_title = name;
 
-        // Save config
-        let config_path = path_buf.join("project.json");
+        // Save config as .bvy file
+        let config_path = path_buf.join("project.bvy");
         config.save_to_file(&config_path)?;
 
         // Load metadata (this will create the directory structure)
@@ -36,10 +36,10 @@ impl CurrentProject {
     pub fn open_existing<P: Into<PathBuf>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
         let path_buf = path.into();
 
-        // Check if project.json exists
-        let config_path = path_buf.join("project.json");
+        // Check if project.bvy exists
+        let config_path = path_buf.join("project.bvy");
         if !config_path.exists() {
-            return Err(format!("No project.json found at {:?}", config_path).into());
+            return Err(format!("No project.bvy found at {:?}", path_buf).into());
         }
 
         // Load metadata

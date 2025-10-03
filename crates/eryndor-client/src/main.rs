@@ -59,7 +59,7 @@ fn main() {
                 eprintln!("Falling back to defaults");
                 ClientConfig {
                     project_metadata: None,
-                    level_path: "world/world.json".to_string(),
+                    level_path: "world/world.bscene".to_string(),
                     asset_path: "../eryndor-editor/assets".to_string(),
                 }
             }
@@ -69,7 +69,7 @@ fn main() {
         warn!("No project path provided, using default paths");
         ClientConfig {
             project_metadata: None,
-            level_path: args.level.unwrap_or_else(|| "world/world.json".to_string()),
+            level_path: args.level.unwrap_or_else(|| "world/world.bscene".to_string()),
             asset_path: "../eryndor-editor/assets".to_string(),
         }
     };

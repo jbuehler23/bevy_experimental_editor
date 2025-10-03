@@ -22,6 +22,7 @@ mod client_launcher;
 mod project_ui;
 mod project_generator;
 mod project_wizard;
+mod build_manager;
 
 use camera::*;
 use gizmos::*;
@@ -40,6 +41,7 @@ use project_manager::*;
 use client_launcher::*;
 use project_ui::*;
 use project_wizard::*;
+use build_manager::*;
 
 fn main() {
     App::new()
@@ -73,6 +75,7 @@ fn main() {
         .init_resource::<ProjectSelection>()
         .init_resource::<ProjectWizard>()
         .init_resource::<StandaloneClient>()
+        .init_resource::<BuildManager>()
         // Tilemap resources
         .init_resource::<TilesetManager>()
         .init_resource::<tileset_panel::TilesetZoom>()
@@ -93,6 +96,7 @@ fn main() {
             project_wizard_ui,
             play_controls_ui,
             monitor_client_process,
+            poll_build_status,
             ui_system,
             tileset_panel_ui,
             layer_panel_ui,

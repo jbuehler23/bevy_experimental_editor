@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::asset::{AssetLoader, LoadContext};
-use eryndor_common::LevelData;
+use eryndor_common::{LevelData, BevyScene};
 
 /// Custom asset type for level data
 #[derive(Asset, TypePath, Clone)]
@@ -8,7 +8,7 @@ pub struct LevelAsset {
     pub data: LevelData,
 }
 
-/// Asset loader for level JSON files
+/// Asset loader for .bscene files
 #[derive(Default)]
 pub struct LevelAssetLoader;
 
@@ -26,14 +26,15 @@ impl AssetLoader for LevelAssetLoader {
         let mut bytes = Vec::new();
         reader.read_to_end(&mut bytes).await?;
 
-        let level_data: LevelData = serde_json::from_slice(&bytes)
+        // Parse as BevyScene and extract the level data
+        let scene: BevyScene = serde_json::from_slice(&bytes)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
 
-        Ok(LevelAsset { data: level_data })
+        Ok(LevelAsset { data: scene.data })
     }
 
     fn extensions(&self) -> &[&str] {
-        &["json"]
+        &["bscene"]
     }
 }
 

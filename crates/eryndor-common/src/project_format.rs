@@ -18,7 +18,7 @@ impl Default for ClientConfig {
             window_width: 1280,
             window_height: 720,
             asset_watch: true,
-            default_level: "world/level1.json".to_string(),
+            default_level: "world/level1.bscene".to_string(),
         }
     }
 }
@@ -82,7 +82,7 @@ impl ProjectMetadata {
     /// Create project metadata from a project root directory
     pub fn from_project_path<P: AsRef<Path>>(project_path: P) -> Result<Self, Box<dyn std::error::Error>> {
         let root_path = project_path.as_ref().to_path_buf();
-        let config_path = root_path.join("project.json");
+        let config_path = root_path.join("project.bvy");
 
         let config = if config_path.exists() {
             ProjectConfig::load_from_file(&config_path)?
@@ -128,7 +128,7 @@ impl ProjectMetadata {
 
     /// Save the current config back to disk
     pub fn save_config(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let config_path = self.root_path.join("project.json");
+        let config_path = self.root_path.join("project.bvy");
         self.config.save_to_file(config_path)
     }
 }

@@ -3,6 +3,8 @@ use bevy_egui::{egui, EguiContexts};
 use crate::project_manager::{ProjectSelection, ProjectSelectionState, CurrentProject};
 use crate::client_launcher::StandaloneClient;
 use crate::project_wizard::ProjectWizard;
+use crate::build_manager::{BuildManager, BuildStatus};
+use crate::project_generator::get_package_name_from_cargo_toml;
 
 /// UI for project selection dialog
 pub fn project_selection_ui(
@@ -76,6 +78,7 @@ pub fn play_controls_ui(
     mut contexts: EguiContexts,
     project: Option<Res<CurrentProject>>,
     mut client: ResMut<StandaloneClient>,
+    mut build_manager: ResMut<BuildManager>,
 ) {
     let Some(project) = project else {
         return; // No project loaded yet
@@ -85,21 +88,86 @@ pub fn play_controls_ui(
         .default_pos([10.0, 100.0])
         .show(contexts.ctx_mut(), |ui| {
             ui.horizontal(|ui| {
-                if client.is_running {
+                // Check if build is running
+                if build_manager.is_building() {
+                    if ui.button("🛑 Cancel Build").clicked() {
+                        build_manager.cancel_build();
+                    }
+                    ui.spinner();
+                    ui.label(build_manager.current_stage());
+                } else if client.is_running {
                     if ui.button("⏹ Stop").clicked() {
                         client.stop();
                     }
-                    ui.label("Client is running");
+                    ui.label("Game is running");
                 } else {
-                    if ui.button("▶ Run Standalone").clicked() {
+                    if ui.button("▶ Run").clicked() {
                         let project_path = project.root_path().clone();
-                        match client.launch(project_path, None) {
-                            Ok(_) => info!("Client launched successfully"),
-                            Err(e) => error!("Failed to launch client: {}", e),
+
+                        // Get package name
+                        match get_package_name_from_cargo_toml(&project_path) {
+                            Ok(package_name) => {
+                                // Check if exe exists
+                                let exe_name = if cfg!(windows) {
+                                    format!("{}.exe", package_name)
+                                } else {
+                                    package_name.clone()
+                                };
+                                let exe_path = project_path.join("target").join("debug").join(&exe_name);
+
+                                if !exe_path.exists() {
+                                    // Start async build
+                                    build_manager.start_build(project_path, package_name);
+                                } else {
+                                    // Launch directly
+                                    match client.launch(project_path, None) {
+                                        Ok(_) => info!("Game launched successfully"),
+                                        Err(e) => error!("Failed to launch game: {}", e),
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                error!("Failed to get package name: {}", e);
+                            }
                         }
                     }
                 }
             });
+
+            // Show build status
+            match &build_manager.current_status {
+                BuildStatus::Building { stage, elapsed_secs } => {
+                    ui.add_space(5.0);
+                    ui.label(format!("⏱ {:.1}s elapsed", elapsed_secs));
+                    ui.label(format!("Status: {}", stage));
+                }
+                BuildStatus::Finished { duration_secs } => {
+                    ui.add_space(5.0);
+                    ui.label(format!("✅ Build completed in {:.1}s", duration_secs));
+
+                    // Auto-launch after successful build
+                    if !client.is_running {
+                        let project_path = project.root_path().clone();
+                        match client.launch(project_path, None) {
+                            Ok(_) => info!("Game launched after build"),
+                            Err(e) => error!("Failed to launch game: {}", e),
+                        }
+                        // Reset to idle
+                        build_manager.current_status = BuildStatus::Idle;
+                    }
+                }
+                BuildStatus::Failed { error } => {
+                    ui.add_space(5.0);
+                    ui.colored_label(egui::Color32::RED, format!("❌ Build failed: {}", error));
+                    if ui.button("Retry").clicked() {
+                        let project_path = project.root_path().clone();
+                        if let Ok(package_name) = get_package_name_from_cargo_toml(&project_path) {
+                            build_manager.start_build(project_path, package_name);
+                        }
+                    }
+                }
+                BuildStatus::Idle => {}
+            }
 
             ui.add_space(10.0);
 

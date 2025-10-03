@@ -251,13 +251,14 @@ fn save_level_with_tilemap(
     // Update level data with tilemap
     current_level.level_data.tilemap = Some(tilemap_data);
 
-    // Save to file
-    if let Err(e) = current_level.level_data.save_to_json(path) {
-        error!("Failed to save level: {}", e);
+    // Create BevyScene and save to .bscene file
+    let scene = eryndor_common::BevyScene::new(current_level.level_data.clone());
+    if let Err(e) = scene.save_to_file(path) {
+        error!("Failed to save scene: {}", e);
     } else {
         current_level.file_path = Some(path.to_string());
         current_level.is_modified = false;
-        info!("Level saved to {}", path);
+        info!("Scene saved to {}", path);
     }
 }
 
@@ -270,9 +271,9 @@ fn save_as_dialog_with_tilemap(
     tile_query: &Query<(&bevy_ecs_tilemap::prelude::TileTextureIndex, &bevy_ecs_tilemap::prelude::TileVisible, &bevy_ecs_tilemap::prelude::TilePos)>,
 ) {
     if let Some(path) = rfd::FileDialog::new()
-        .add_filter("JSON", &["json"])
+        .add_filter("Bevy Scene", &["bscene"])
         .set_directory("./assets/levels")
-        .set_file_name("level.json")
+        .set_file_name("level.bscene")
         .save_file()
     {
         let path_str = path.to_string_lossy().to_string();
@@ -302,12 +303,13 @@ fn open_dialog(
     }
 
     if let Some(path) = rfd::FileDialog::new()
-        .add_filter("JSON", &["json"])
+        .add_filter("Bevy Scene", &["bscene"])
         .set_directory("./assets/levels")
         .pick_file()
     {
         let path_str = path.to_string_lossy().to_string();
-        match eryndor_common::LevelData::load_from_json(&path_str) {
+        // Load .bscene file and extract level data
+        match eryndor_common::BevyScene::load_from_file(&path_str).map(|scene| scene.data) {
             Ok(level_data) => {
                 // Clear existing tilemap
                 for entity in existing_canvas.iter() {
