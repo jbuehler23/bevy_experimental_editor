@@ -5,6 +5,7 @@ use crate::client_launcher::StandaloneClient;
 use crate::project_wizard::ProjectWizard;
 use crate::build_manager::{BuildManager, BuildStatus};
 use crate::project_generator::get_package_name_from_cargo_toml;
+use crate::CurrentLevel;
 
 /// UI for project selection dialog
 pub fn project_selection_ui(
@@ -77,6 +78,7 @@ pub fn project_selection_ui(
 pub fn play_controls_ui(
     mut contexts: EguiContexts,
     project: Option<Res<CurrentProject>>,
+    current_level: Option<Res<CurrentLevel>>,
     mut client: ResMut<StandaloneClient>,
     mut build_manager: ResMut<BuildManager>,
 ) {
@@ -119,8 +121,10 @@ pub fn play_controls_ui(
                                     // Start async build
                                     build_manager.start_build(project_path, package_name);
                                 } else {
-                                    // Launch directly
-                                    match client.launch(project_path, None) {
+                                    // Launch directly with current scene path if available
+                                    let level_path = current_level.as_ref()
+                                        .and_then(|level| level.file_path.clone());
+                                    match client.launch(project_path, level_path) {
                                         Ok(_) => info!("Game launched successfully"),
                                         Err(e) => error!("Failed to launch game: {}", e),
                                     }
@@ -148,7 +152,9 @@ pub fn play_controls_ui(
                     // Auto-launch after successful build
                     if !client.is_running {
                         let project_path = project.root_path().clone();
-                        match client.launch(project_path, None) {
+                        let level_path = current_level.as_ref()
+                            .and_then(|level| level.file_path.clone());
+                        match client.launch(project_path, level_path) {
                             Ok(_) => info!("Game launched after build"),
                             Err(e) => error!("Failed to launch game: {}", e),
                         }
