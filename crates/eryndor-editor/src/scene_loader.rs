@@ -19,7 +19,7 @@ pub struct SceneAutoLoader {
 pub fn auto_load_scene_system(
     mut commands: Commands,
     project: Option<Res<CurrentProject>>,
-    mut current_level: ResMut<CurrentLevel>,
+    mut open_scenes: ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
     mut auto_loader: ResMut<SceneAutoLoader>,
 ) {
     // Only run once when a project is first loaded
@@ -40,11 +40,25 @@ pub fn auto_load_scene_system(
 
         if scene_path.exists() {
             match BevyScene::load_from_file(&scene_path) {
-                Ok(scene) => {
+                Ok(bevy_scene) => {
                     info!("Auto-loaded scene: {}", scene_name);
-                    current_level.level_data = scene.data;
-                    current_level.file_path = Some(scene_path.to_string_lossy().to_string());
-                    current_level.is_modified = false;
+
+                    let new_scene = crate::scene_tabs::OpenScene {
+                        name: scene_name.clone(),
+                        file_path: Some(scene_path.to_string_lossy().to_string()),
+                        level_data: bevy_scene.data,
+                        is_modified: false,
+                    };
+
+                    // Replace the default untitled scene with the loaded scene
+                    if open_scenes.scenes.len() == 1 &&
+                       open_scenes.scenes[0].name.starts_with("Untitled") &&
+                       !open_scenes.scenes[0].is_modified {
+                        open_scenes.scenes[0] = new_scene;
+                    } else {
+                        open_scenes.add_scene(new_scene);
+                    }
+
                     auto_loader.has_loaded = true;
                 }
                 Err(e) => {

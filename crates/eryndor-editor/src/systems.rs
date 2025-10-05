@@ -18,7 +18,7 @@ pub fn handle_entity_placement(
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform)>,
     editor_state: Res<EditorState>,
-    mut current_level: ResMut<CurrentLevel>,
+    mut open_scenes: ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
     entity_palette: Res<EntityPalette>,
     mut entity_map: ResMut<EditorEntityMap>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -58,16 +58,18 @@ pub fn handle_entity_placement(
     // Create entity spawn config
     let spawn_config = create_spawn_config_for_type(selected_entity.clone(), final_pos.into());
 
-    // Add to level data
-    let entity_id = current_level.level_data.entities.len();
-    current_level.level_data.add_entity(spawn_config.clone());
-    current_level.is_modified = true;
+    // Add to active scene's level data
+    if let Some(scene) = open_scenes.active_scene_mut() {
+        let entity_id = scene.level_data.entities.len();
+        scene.level_data.add_entity(spawn_config.clone());
+        scene.is_modified = true;
 
-    // Spawn visual representation
-    let entity = spawn_entity_visual(&mut commands, &spawn_config, entity_id, &mut meshes, &mut materials);
-    entity_map.entities.push(entity);
+        // Spawn visual representation
+        let entity = spawn_entity_visual(&mut commands, &spawn_config, entity_id, &mut meshes, &mut materials);
+        entity_map.entities.push(entity);
 
-    info!("Placed entity at {:?}", final_pos);
+        info!("Placed entity at {:?}", final_pos);
+    }
 }
 
 /// Handle creating/editing platforms
@@ -77,7 +79,7 @@ pub fn handle_platform_editing(
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform)>,
     editor_state: Res<EditorState>,
-    mut current_level: ResMut<CurrentLevel>,
+    mut open_scenes: ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
     mut entity_map: ResMut<EditorEntityMap>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -114,21 +116,24 @@ pub fn handle_platform_editing(
         is_one_way: false,
     };
 
-    let platform_id = current_level.level_data.platforms.len();
-    current_level.level_data.add_platform(platform.clone());
-    current_level.is_modified = true;
+    // Add to active scene's level data
+    if let Some(scene) = open_scenes.active_scene_mut() {
+        let platform_id = scene.level_data.platforms.len();
+        scene.level_data.add_platform(platform.clone());
+        scene.is_modified = true;
 
-    // Spawn visual representation
-    let entity = spawn_platform_visual(&mut commands, &platform, platform_id, &mut meshes, &mut materials);
-    entity_map.platforms.push(entity);
+        // Spawn visual representation
+        let entity = spawn_platform_visual(&mut commands, &platform, platform_id, &mut meshes, &mut materials);
+        entity_map.platforms.push(entity);
 
-    info!("Placed platform at {:?}", final_pos);
+        info!("Placed platform at {:?}", final_pos);
+    }
 }
 
 /// Handle saving and loading levels
 pub fn handle_save_load(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut current_level: ResMut<CurrentLevel>,
+    mut open_scenes: ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
     editor_state: Res<EditorState>,
     mut tileset_manager: ResMut<crate::tileset_manager::TilesetManager>,
     map_dimensions: Res<crate::map_canvas::MapDimensions>,
@@ -142,33 +147,51 @@ pub fn handle_save_load(
 ) {
     // Ctrl+S to save
     if keyboard.pressed(KeyCode::ControlLeft) && keyboard.just_pressed(KeyCode::KeyS) {
-        if let Some(path) = current_level.file_path.clone() {
-            save_level_with_tilemap(
-                &mut current_level,
-                &path,
-                &editor_state,
-                &tileset_manager,
-                &map_dimensions,
-                &tilemap_query,
-                &tile_query,
-            );
+        if let Some(scene) = open_scenes.active_scene_mut() {
+            if let Some(path) = scene.file_path.clone() {
+                save_level_with_tilemap(
+                    scene,
+                    &path,
+                    &editor_state,
+                    &tileset_manager,
+                    &map_dimensions,
+                    &tilemap_query,
+                    &tile_query,
+                );
 
-            // Update last opened scene in project config
-            if let Some(ref mut project) = current_project {
-                update_last_opened_scene(project, &path);
-            }
-
-            // Trigger background build after successful save
-            if let Some(project) = current_project.as_ref() {
-                if let Ok(package_name) = crate::project_generator::get_package_name_from_cargo_toml(project.root_path()) {
-                    info!("Starting background build after save...");
-                    build_manager.start_build(project.root_path().clone(), package_name);
+                // Update last opened scene in project config
+                if let Some(ref mut project) = current_project {
+                    update_last_opened_scene(project, &path);
                 }
+
+                // Trigger background build after successful save
+                if let Some(project) = current_project.as_ref() {
+                    if let Ok(package_name) = crate::project_generator::get_package_name_from_cargo_toml(project.root_path()) {
+                        info!("Starting background build after save...");
+                        build_manager.start_build(project.root_path().clone(), package_name);
+                    }
+                }
+            } else {
+                // No path set, show Save As dialog
+                save_as_dialog_with_tilemap(
+                    scene,
+                    &editor_state,
+                    &tileset_manager,
+                    &map_dimensions,
+                    &tilemap_query,
+                    &tile_query,
+                );
             }
-        } else {
-            // No path set, show Save As dialog
+        }
+    }
+
+    // Ctrl+Shift+S for Save As
+    if keyboard.pressed(KeyCode::ControlLeft)
+        && keyboard.pressed(KeyCode::ShiftLeft)
+        && keyboard.just_pressed(KeyCode::KeyS) {
+        if let Some(scene) = open_scenes.active_scene_mut() {
             save_as_dialog_with_tilemap(
-                &mut current_level,
+                scene,
                 &editor_state,
                 &tileset_manager,
                 &map_dimensions,
@@ -178,28 +201,14 @@ pub fn handle_save_load(
         }
     }
 
-    // Ctrl+Shift+S for Save As
-    if keyboard.pressed(KeyCode::ControlLeft)
-        && keyboard.pressed(KeyCode::ShiftLeft)
-        && keyboard.just_pressed(KeyCode::KeyS) {
-        save_as_dialog_with_tilemap(
-            &mut current_level,
-            &editor_state,
-            &tileset_manager,
-            &map_dimensions,
-            &tilemap_query,
-            &tile_query,
-        );
-    }
-
     // Ctrl+O to open
     if keyboard.pressed(KeyCode::ControlLeft) && keyboard.just_pressed(KeyCode::KeyO) {
-        open_dialog(&mut current_level, &mut pending_restore, &mut tileset_manager, &mut commands, &existing_canvas);
+        open_dialog(&mut open_scenes, &mut pending_restore, &mut tileset_manager, &mut commands, &existing_canvas);
     }
 }
 
 fn save_level_with_tilemap(
-    current_level: &mut ResMut<CurrentLevel>,
+    scene: &mut crate::scene_tabs::OpenScene,  // Changed from CurrentLevel
     path: &str,
     editor_state: &EditorState,
     tileset_manager: &crate::tileset_manager::TilesetManager,
@@ -264,21 +273,29 @@ fn save_level_with_tilemap(
     });
 
     // Update level data with tilemap
-    current_level.level_data.tilemap = Some(tilemap_data);
+    scene.level_data.tilemap = Some(tilemap_data);
 
     // Create BevyScene and save to .bscene file
-    let scene = eryndor_common::BevyScene::new(current_level.level_data.clone());
-    if let Err(e) = scene.save_to_file(path) {
+    let bevy_scene = eryndor_common::BevyScene::new(scene.level_data.clone());
+    if let Err(e) = bevy_scene.save_to_file(path) {
         error!("Failed to save scene: {}", e);
     } else {
-        current_level.file_path = Some(path.to_string());
-        current_level.is_modified = false;
+        scene.file_path = Some(path.to_string());
+        scene.is_modified = false;
+
+        // Update scene name from filename
+        if let Some(filename) = std::path::Path::new(path)
+            .file_stem()
+            .and_then(|s| s.to_str()) {
+            scene.name = filename.to_string();
+        }
+
         info!("Scene saved to {}", path);
     }
 }
 
 fn save_as_dialog_with_tilemap(
-    current_level: &mut ResMut<CurrentLevel>,
+    scene: &mut crate::scene_tabs::OpenScene,  // Changed from CurrentLevel
     editor_state: &EditorState,
     tileset_manager: &crate::tileset_manager::TilesetManager,
     map_dimensions: &crate::map_canvas::MapDimensions,
@@ -293,7 +310,7 @@ fn save_as_dialog_with_tilemap(
     {
         let path_str = path.to_string_lossy().to_string();
         save_level_with_tilemap(
-            current_level,
+            scene,
             &path_str,
             editor_state,
             tileset_manager,
@@ -305,16 +322,19 @@ fn save_as_dialog_with_tilemap(
 }
 
 fn open_dialog(
-    current_level: &mut ResMut<CurrentLevel>,
+    open_scenes: &mut ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
     mut pending_restore: &mut ResMut<PendingTilemapRestore>,
     mut tileset_manager: &mut ResMut<crate::tileset_manager::TilesetManager>,
     mut commands: &mut Commands,
     existing_canvas: &Query<Entity, With<crate::map_canvas::MapCanvas>>,
 ) {
-    if current_level.is_modified {
-        warn!("Level has unsaved changes - save first!");
-        // TODO: Show unsaved changes dialog
-        return;
+    // Check if active scene has unsaved changes
+    if let Some(scene) = open_scenes.active_scene() {
+        if scene.is_modified {
+            warn!("Active scene has unsaved changes - save first!");
+            // TODO: Show unsaved changes dialog
+            return;
+        }
     }
 
     if let Some(path) = rfd::FileDialog::new()
@@ -324,8 +344,8 @@ fn open_dialog(
     {
         let path_str = path.to_string_lossy().to_string();
         // Load .bscene file and extract level data
-        match eryndor_common::BevyScene::load_from_file(&path_str).map(|scene| scene.data) {
-            Ok(level_data) => {
+        match eryndor_common::BevyScene::load_from_file(&path_str) {
+            Ok(bevy_scene) => {
                 // Clear existing tilemap
                 for entity in existing_canvas.iter() {
                     commands.entity(entity).despawn();
@@ -334,19 +354,29 @@ fn open_dialog(
                 // Clear tilesets
                 tileset_manager.clear();
 
-                // Load new level data
-                current_level.level_data = level_data;
-                current_level.file_path = Some(path_str.clone());
-                current_level.is_modified = false;
+                // Create new scene and add to tabs
+                let scene_name = path.file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("Untitled")
+                    .to_string();
+
+                let new_scene = crate::scene_tabs::OpenScene {
+                    name: scene_name,
+                    file_path: Some(path_str.clone()),
+                    level_data: bevy_scene.data,
+                    is_modified: false,
+                };
+
+                open_scenes.add_scene(new_scene);
 
                 // Flag that we need to restore tilemap after canvas is created
                 pending_restore.should_restore = true;
 
-                info!("Level loaded from {}", path_str);
+                info!("Scene loaded from {}", path_str);
                 // TODO: Reload all visual entities
             }
             Err(e) => {
-                error!("Failed to load level: {}", e);
+                error!("Failed to load scene: {}", e);
             }
         }
     }
@@ -355,7 +385,7 @@ fn open_dialog(
 /// System to restore tilemap data when a level is loaded
 pub fn restore_tilemap_from_level(
     mut pending_restore: ResMut<PendingTilemapRestore>,
-    current_level: Res<CurrentLevel>,
+    open_scenes: Res<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
     mut editor_state: ResMut<EditorState>,
     mut map_dimensions: ResMut<crate::map_canvas::MapDimensions>,
     mut load_tileset_events: EventWriter<crate::tileset_manager::LoadTilesetEvent>,
@@ -367,7 +397,11 @@ pub fn restore_tilemap_from_level(
         return;
     }
 
-    if let Some(tilemap_data) = &current_level.level_data.tilemap {
+    // Get active scene's tilemap data
+    let tilemap_data = open_scenes.active_scene()
+        .and_then(|scene| scene.level_data.tilemap.as_ref());
+
+    if let Some(tilemap_data) = tilemap_data {
         // Check if the tilemap canvas has been created
         if let Ok(tile_storage) = tilemap_query.get_single() {
             info!("Restoring tilemap from level data...");
@@ -500,5 +534,148 @@ fn create_spawn_config_for_type(entity_type: EntityType, position: Vector2) -> E
             EntitySpawnConfig::spawn_point(position, spawn_type, "default".to_string())
         }
         EntityType::Player => EntitySpawnConfig::player(position, "Player".to_string(), 100),
+    }
+}
+
+/// System to sync tilemap when switching scenes
+/// This captures the current tilemap state, saves it to the old scene,
+/// and loads the new scene's tilemap data
+pub fn sync_tilemap_on_scene_switch(
+    mut open_scenes: ResMut<crate::scene_tabs::OpenScenes>,
+    mut previous_scene: Local<Option<usize>>,
+    tilemap_query: Query<&bevy_ecs_tilemap::prelude::TileStorage, With<crate::map_canvas::MapCanvas>>,
+    mut tile_query: Query<(&mut bevy_ecs_tilemap::prelude::TileTextureIndex, &mut bevy_ecs_tilemap::prelude::TileVisible)>,
+    editor_state: Res<EditorState>,
+    map_dimensions: Res<crate::map_canvas::MapDimensions>,
+    tileset_manager: Res<crate::tileset_manager::TilesetManager>,
+) {
+    let current_index = open_scenes.active_index;
+
+    // Check if scene actually changed
+    if *previous_scene == Some(current_index) {
+        return;
+    }
+
+    // PHASE 1: Save current tilemap to previous scene (if any)
+    if let Some(prev_idx) = *previous_scene {
+        if let Some(prev_scene) = open_scenes.scenes.get_mut(prev_idx) {
+            if let Ok(tile_storage) = tilemap_query.get_single() {
+                // Capture current tilemap state
+                let tilemap_data = capture_tilemap_state(
+                    tile_storage,
+                    &tile_query,
+                    &editor_state,
+                    &map_dimensions,
+                    &tileset_manager,
+                );
+                prev_scene.level_data.tilemap = Some(tilemap_data);
+                info!("Saved tilemap state for scene '{}'", prev_scene.name);
+            }
+        }
+    }
+
+    // PHASE 2: Clear tilemap (set all tiles invisible)
+    if let Ok(tile_storage) = tilemap_query.get_single() {
+        for y in 0..map_dimensions.height {
+            for x in 0..map_dimensions.width {
+                let tile_pos = bevy_ecs_tilemap::prelude::TilePos { x, y };
+                if let Some(tile_entity) = tile_storage.get(&tile_pos) {
+                    if let Ok((_tex, mut visible)) = tile_query.get_mut(tile_entity) {
+                        visible.0 = false;
+                    }
+                }
+            }
+        }
+    }
+
+    // PHASE 3: Load active scene's tilemap
+    if let Some(active_scene) = open_scenes.active_scene() {
+        if let Some(tilemap_data) = &active_scene.level_data.tilemap {
+            if let Ok(tile_storage) = tilemap_query.get_single() {
+                // Restore tiles from data
+                if !tilemap_data.layers.is_empty() {
+                    let layer = &tilemap_data.layers[0];
+                    info!("Loading {} tiles for scene '{}'", layer.tiles.len(), active_scene.name);
+
+                    for tile_instance in &layer.tiles {
+                        let tile_pos = bevy_ecs_tilemap::prelude::TilePos {
+                            x: tile_instance.x,
+                            y: tile_instance.y,
+                        };
+                        if let Some(tile_entity) = tile_storage.get(&tile_pos) {
+                            if let Ok((mut tex, mut vis)) = tile_query.get_mut(tile_entity) {
+                                tex.0 = tile_instance.tile_id;
+                                vis.0 = true;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            info!("Switched to scene '{}' (empty tilemap)", active_scene.name);
+        }
+    }
+
+    // Update previous scene tracker
+    *previous_scene = Some(current_index);
+}
+
+/// Helper function to capture current tilemap state into LevelTilemapData
+fn capture_tilemap_state(
+    tile_storage: &bevy_ecs_tilemap::prelude::TileStorage,
+    tile_query: &Query<(&mut bevy_ecs_tilemap::prelude::TileTextureIndex, &mut bevy_ecs_tilemap::prelude::TileVisible)>,
+    editor_state: &EditorState,
+    map_dimensions: &crate::map_canvas::MapDimensions,
+    tileset_manager: &crate::tileset_manager::TilesetManager,
+) -> eryndor_common::LevelTilemapData {
+    use eryndor_common::{LevelTilemapData, LevelLayerData, LevelTileInstance, LevelTilesetData};
+    use std::collections::HashSet;
+
+    let mut tiles = Vec::new();
+    for y in 0..map_dimensions.height {
+        for x in 0..map_dimensions.width {
+            let tile_pos = bevy_ecs_tilemap::prelude::TilePos { x, y };
+            if let Some(tile_entity) = tile_storage.get(&tile_pos) {
+                if let Ok((tex, vis)) = tile_query.get(tile_entity) {
+                    if vis.0 {  // Only save visible tiles
+                        tiles.push(LevelTileInstance {
+                            x,
+                            y,
+                            tile_id: tex.0,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    // Build tileset data
+    let mut tilesets = Vec::new();
+    let mut seen_paths = HashSet::new();
+    for (id, tileset_info) in tileset_manager.tilesets.iter() {
+        if seen_paths.insert(tileset_info.data.texture_path.clone()) {
+            let relative_path = convert_to_relative_asset_path(&tileset_info.data.texture_path);
+            tilesets.push(LevelTilesetData {
+                id: *id,
+                identifier: tileset_info.data.identifier.clone(),
+                texture_path: relative_path,
+                tile_width: tileset_info.data.tile_width,
+                tile_height: tileset_info.data.tile_height,
+            });
+        }
+    }
+
+    LevelTilemapData {
+        grid_size: editor_state.grid_size,
+        map_width: map_dimensions.width,
+        map_height: map_dimensions.height,
+        tilesets,
+        selected_tileset_id: tileset_manager.selected_tileset_id,
+        layers: vec![LevelLayerData {
+            id: 0,
+            name: "Layer 0".to_string(),
+            visible: true,
+            tiles,
+        }],
     }
 }

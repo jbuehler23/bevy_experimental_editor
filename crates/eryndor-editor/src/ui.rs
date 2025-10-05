@@ -13,6 +13,7 @@ pub fn ui_system(
     mut collision_editor: ResMut<CollisionEditor>,
     workspace: Option<Res<crate::workspace::EditorWorkspace>>,
     mut project_selection: Option<ResMut<crate::project_manager::ProjectSelection>>,
+    open_scenes: Res<crate::scene_tabs::OpenScenes>,  // Multi-scene support
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -22,16 +23,20 @@ pub fn ui_system(
     // Bottom status bar
     egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
         ui.horizontal(|ui| {
-            ui.label(format!("Level: {}", current_level.level_data.metadata.name));
-            ui.separator();
-            ui.label(format!("Platforms: {}", current_level.level_data.platforms.len()));
-            ui.separator();
-            ui.label(format!("Entities: {}", current_level.level_data.entities.len()));
-            ui.separator();
-            if current_level.is_modified {
-                ui.label("● Modified");
+            if let Some(scene) = open_scenes.active_scene() {
+                ui.label(format!("Scene: {}", scene.name));
+                ui.separator();
+                ui.label(format!("Platforms: {}", scene.level_data.platforms.len()));
+                ui.separator();
+                ui.label(format!("Entities: {}", scene.level_data.entities.len()));
+                ui.separator();
+                if scene.is_modified {
+                    ui.label("● Modified");
+                } else {
+                    ui.label("○ Saved");
+                }
             } else {
-                ui.label("○ Saved");
+                ui.label("No scene loaded");
             }
         });
     });

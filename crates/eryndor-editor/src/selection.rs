@@ -123,7 +123,7 @@ pub fn handle_entity_deletion(
     mut commands: Commands,
     selection: Res<Selection>,
     editor_entities: Query<&EditorEntity>,
-    mut current_level: ResMut<crate::CurrentLevel>,
+    mut open_scenes: ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
     mut entity_map: ResMut<EditorEntityMap>,
 ) {
     if !keyboard.just_pressed(KeyCode::Delete) && !keyboard.just_pressed(KeyCode::Backspace) {
@@ -134,31 +134,33 @@ pub fn handle_entity_deletion(
         return;
     }
 
-    // Delete selected entities
-    for entity in selection.selected.iter() {
-        if let Ok(editor_entity) = editor_entities.get(*entity) {
-            // Remove from level data
-            match editor_entity.entity_type {
-                EditorEntityType::Platform => {
-                    if editor_entity.entity_id < current_level.level_data.platforms.len() {
-                        current_level.level_data.platforms.remove(editor_entity.entity_id);
+    // Delete selected entities from active scene
+    if let Some(scene) = open_scenes.active_scene_mut() {
+        for entity in selection.selected.iter() {
+            if let Ok(editor_entity) = editor_entities.get(*entity) {
+                // Remove from level data
+                match editor_entity.entity_type {
+                    EditorEntityType::Platform => {
+                        if editor_entity.entity_id < scene.level_data.platforms.len() {
+                            scene.level_data.platforms.remove(editor_entity.entity_id);
+                        }
+                    }
+                    _ => {
+                        if editor_entity.entity_id < scene.level_data.entities.len() {
+                            scene.level_data.entities.remove(editor_entity.entity_id);
+                        }
                     }
                 }
-                _ => {
-                    if editor_entity.entity_id < current_level.level_data.entities.len() {
-                        current_level.level_data.entities.remove(editor_entity.entity_id);
-                    }
-                }
+
+                // Despawn visual entity
+                commands.entity(*entity).despawn();
+                scene.is_modified = true;
             }
-
-            // Despawn visual entity
-            commands.entity(*entity).despawn();
-            current_level.is_modified = true;
         }
-    }
 
-    // Rebuild entity map after deletion
-    // TODO: Make this more efficient
+        // Rebuild entity map after deletion
+        // TODO: Make this more efficient
+    }
 }
 
 // Helper functions

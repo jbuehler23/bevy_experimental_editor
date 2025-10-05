@@ -77,7 +77,8 @@ fn main() {
         ))
         // Editor resources
         .init_resource::<EditorState>()
-        .init_resource::<CurrentLevel>()
+        .init_resource::<CurrentLevel>()  // Keep for backward compatibility temporarily
+        .init_resource::<OpenScenes>()     // Multi-scene tab system
         .init_resource::<EntityPalette>()
         .init_resource::<Selection>()
         .init_resource::<EditorEntityMap>()
@@ -114,6 +115,8 @@ fn main() {
             poll_build_status,
             ui_system,
             toolbar_ui,
+            scene_tabs_ui,  // Multi-scene tab bar
+            sync_tilemap_on_scene_switch.after(scene_tabs_ui),  // Sync tilemap when tab changes
             tileset_panel_ui,
             layer_panel_ui,
             disable_pancam_over_ui.after(tileset_panel_ui).after(ui_system),
