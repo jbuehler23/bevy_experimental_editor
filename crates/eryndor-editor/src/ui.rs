@@ -11,6 +11,8 @@ pub fn ui_system(
     mut current_level: ResMut<CurrentLevel>,
     mut entity_palette: ResMut<EntityPalette>,
     mut collision_editor: ResMut<CollisionEditor>,
+    workspace: Option<Res<crate::workspace::EditorWorkspace>>,
+    mut project_selection: Option<ResMut<crate::project_manager::ProjectSelection>>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -41,6 +43,46 @@ pub fn ui_system(
                 ui.label("Save/Load via Ctrl+S / Ctrl+O");
                 ui.label("(Saves all entities, platforms, and tilemap data)");
                 ui.separator();
+
+                // Recent Projects submenu
+                if let Some(ref workspace) = workspace {
+                    ui.menu_button("Recent Projects", |ui| {
+                        if workspace.recent_projects.is_empty() {
+                            ui.label("No recent projects");
+                        } else {
+                            for (idx, project_path) in workspace.recent_projects.iter().enumerate() {
+                                // Extract project name from path
+                                let project_name = std::path::Path::new(project_path)
+                                    .file_name()
+                                    .and_then(|n| n.to_str())
+                                    .unwrap_or(project_path);
+
+                                if ui.button(format!("{}. {}", idx + 1, project_name))
+                                    .on_hover_text(project_path)
+                                    .clicked()
+                                {
+                                    // Open this project
+                                    if let Some(ref mut selection) = project_selection {
+                                        selection.state = crate::project_manager::ProjectSelectionState::Opening {
+                                            path: project_path.clone(),
+                                        };
+                                        info!("Opening recent project: {}", project_path);
+                                    }
+                                    ui.close_menu();
+                                }
+                            }
+
+                            ui.separator();
+                            if ui.button("Clear Recent Projects").clicked() {
+                                // Note: We can't mutate workspace here, will need a separate system
+                                info!("Clear recent projects requested (not yet implemented)");
+                                ui.close_menu();
+                            }
+                        }
+                    });
+                    ui.separator();
+                }
+
                 if ui.button("Exit").clicked() {
                     std::process::exit(0);
                 }
