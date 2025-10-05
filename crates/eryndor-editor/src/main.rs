@@ -28,6 +28,7 @@ mod shortcuts;
 mod toolbar;
 mod scene_loader;
 mod workspace;
+mod scene_tabs;
 
 use camera::*;
 use gizmos::*;
@@ -50,6 +51,7 @@ use build_manager::*;
 use shortcuts::*;
 use toolbar::*;
 use scene_loader::*;
+use scene_tabs::*;
 use workspace::*;
 
 fn main() {
