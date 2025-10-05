@@ -18,7 +18,8 @@ impl CurrentProject {
 
         // Create project config
         let mut config = ProjectConfig::new(name.clone());
-        config.client_config.window_title = name;
+        config.client_config.window_title = name.clone();
+        config.default_scene = Some("main.bscene".to_string());
 
         // Save config as .bvy file
         let config_path = path_buf.join("project.bvy");
@@ -26,6 +27,19 @@ impl CurrentProject {
 
         // Load metadata (this will create the directory structure)
         let metadata = ProjectMetadata::from_project_path(&path_buf)?;
+
+        // Auto-create default scene (main.bscene)
+        let default_scene_path = metadata.levels_path.join("main.bscene");
+        if !default_scene_path.exists() {
+            let default_level_data = eryndor_common::LevelData::new(
+                format!("{} - Main Scene", name),
+                2000.0, // default width
+                1000.0, // default height
+            );
+            let scene = eryndor_common::BevyScene::new(default_level_data);
+            scene.save_to_file(&default_scene_path)?;
+            info!("Created default scene: {:?}", default_scene_path);
+        }
 
         info!("Created new project at: {:?}", path_buf);
 

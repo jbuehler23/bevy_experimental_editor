@@ -26,6 +26,7 @@ mod project_wizard;
 mod build_manager;
 mod shortcuts;
 mod toolbar;
+mod scene_loader;
 mod workspace;
 
 use camera::*;
@@ -48,6 +49,7 @@ use project_wizard::*;
 use build_manager::*;
 use shortcuts::*;
 use toolbar::*;
+use scene_loader::*;
 use workspace::*;
 
 fn main() {
@@ -90,6 +92,7 @@ fn main() {
         .init_resource::<TilePainter>()
         .init_resource::<CollisionEditor>()
         .init_resource::<MapDimensions>()
+        .init_resource::<SceneAutoLoader>()
         // Tilemap events
         .add_event::<LoadTilesetEvent>()
         .add_event::<SelectTileEvent>()
@@ -101,6 +104,7 @@ fn main() {
         .add_systems(Update, handle_global_shortcuts)
         .add_systems(Update, (
             handle_project_selection,
+            auto_load_scene_system,
             project_selection_ui,
             project_wizard_ui,
             play_controls_ui,
