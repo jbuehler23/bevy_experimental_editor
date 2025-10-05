@@ -106,12 +106,19 @@ pub struct ProjectSelection {
 pub fn handle_project_selection(
     mut commands: Commands,
     mut selection: ResMut<ProjectSelection>,
+    mut workspace: Option<ResMut<crate::workspace::EditorWorkspace>>,
 ) {
     match &selection.state {
         ProjectSelectionState::Creating { path, name } => {
             match CurrentProject::create_new(path.clone(), name.clone()) {
                 Ok(project) => {
                     info!("Project created successfully");
+
+                    // Add to workspace recent projects
+                    if let Some(ref mut workspace) = workspace {
+                        workspace.add_recent_project(path.clone());
+                    }
+
                     commands.insert_resource(project);
                     selection.state = ProjectSelectionState::Ready;
                 }
@@ -125,6 +132,12 @@ pub fn handle_project_selection(
             match CurrentProject::open_existing(path.clone()) {
                 Ok(project) => {
                     info!("Project opened successfully");
+
+                    // Add to workspace recent projects
+                    if let Some(ref mut workspace) = workspace {
+                        workspace.add_recent_project(path.clone());
+                    }
+
                     commands.insert_resource(project);
                     selection.state = ProjectSelectionState::Ready;
                 }

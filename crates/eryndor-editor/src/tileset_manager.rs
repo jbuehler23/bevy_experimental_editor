@@ -219,6 +219,18 @@ impl TilesetManager {
             None
         }
     }
+
+    /// Clear stamp selection and return to single-tile mode
+    pub fn clear_stamp_selection(&mut self) {
+        self.selection_start = None;
+        self.selection_end = None;
+        self.selected_tiles.clear();
+    }
+
+    /// Check if currently in stamp mode (multi-tile selection)
+    pub fn is_stamp_mode(&self) -> bool {
+        self.selected_tiles.len() > 1
+    }
 }
 
 /// Load a tileset from a file path

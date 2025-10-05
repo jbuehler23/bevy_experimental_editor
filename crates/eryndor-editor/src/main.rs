@@ -21,10 +21,12 @@ mod project_manager;
 mod client_launcher;
 mod project_ui;
 mod project_generator;
+mod scene_loader_template;
 mod project_wizard;
 mod build_manager;
 mod shortcuts;
 mod toolbar;
+mod workspace;
 
 use camera::*;
 use gizmos::*;
@@ -46,6 +48,7 @@ use project_wizard::*;
 use build_manager::*;
 use shortcuts::*;
 use toolbar::*;
+use workspace::*;
 
 fn main() {
     App::new()
@@ -93,7 +96,7 @@ fn main() {
         .add_event::<SelectTilesetEvent>()
         .add_event::<PaintTileEvent>()
         // Systems - Split into smaller groups to avoid tuple size limit
-        .add_systems(Startup, setup_editor)
+        .add_systems(Startup, (setup_editor, ensure_default_layer_system, load_workspace_system))
         // Keyboard shortcuts MUST run before UI to capture shortcuts
         .add_systems(Update, handle_global_shortcuts)
         .add_systems(Update, (

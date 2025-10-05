@@ -164,6 +164,21 @@ impl LayerManager {
         sorted.sort_by_key(|layer| layer.metadata.z_index);
         sorted
     }
+
+    /// Ensure at least one layer exists - creates default layer if none exist
+    pub fn ensure_default_layer(&mut self) {
+        if self.layers.is_empty() {
+            let default_layer = create_default_layer(
+                LayerType::Tiles,
+                "Layer 0",
+                0,
+                None,
+            );
+            let index = self.add_layer(default_layer);
+            self.active_layer = Some(index);
+            info!("Auto-created default layer 'Layer 0'");
+        }
+    }
 }
 
 /// Create a default layer
@@ -182,4 +197,9 @@ pub fn create_default_layer(layer_type: LayerType, name: &str, z_index: i32, til
         parallax_x: 1.0,
         parallax_y: 1.0,
     }
+}
+
+/// System to ensure default layer exists on startup
+pub fn ensure_default_layer_system(mut layer_manager: ResMut<LayerManager>) {
+    layer_manager.ensure_default_layer();
 }

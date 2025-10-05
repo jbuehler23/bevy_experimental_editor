@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use crate::{EditorState, Selection, EditorEntity, EditorEntityType};
+use crate::{EditorState, Selection, EditorEntity, EditorEntityType, EditorTool};
+use crate::tile_painter::{TilePainter, PaintMode};
 
 /// Draw grid in the viewport
 pub fn draw_grid(
@@ -130,4 +131,158 @@ fn draw_move_handles(gizmos: &mut Gizmos, position: Vec2) {
         handle_size * 0.7,
         Color::srgb(0.0, 1.0, 0.0),
     );
+}
+
+/// Draw preview for rectangle and line tile tools
+pub fn draw_tile_tool_preview(
+    mut gizmos: Gizmos,
+    editor_state: Res<EditorState>,
+    tile_painter: Res<TilePainter>,
+    tileset_manager: Res<crate::TilesetManager>,
+) {
+    // Only show preview for tile painting tools
+    if editor_state.current_tool != EditorTool::Platform {
+        return;
+    }
+
+    let grid_size = editor_state.grid_size;
+
+    // Draw stamp preview if in stamp mode (multi-tile selection)
+    // Only show when NOT actively dragging (Rectangle/Line tools use drag_start)
+    if tile_painter.mode == PaintMode::Single
+        && tileset_manager.selected_tiles.len() > 1
+        && tile_painter.drag_start.is_none() {  // Prevent conflict with drag tools
+
+        if let Some((cursor_x, cursor_y)) = tile_painter.current_pos {
+            if let Some((stamp_width, stamp_height)) = tileset_manager.get_selection_dimensions() {
+                let preview_color = Color::srgba(0.0, 1.0, 1.0, 0.5); // Cyan semi-transparent
+
+                // Draw preview for each tile in the stamp
+                for offset_y in 0..stamp_height {
+                    for offset_x in 0..stamp_width {
+                        let world_x = (cursor_x + offset_x) as f32 * grid_size;
+                        let world_y = (cursor_y + offset_y) as f32 * grid_size;
+
+                        // Draw tile outline
+                        let corners = [
+                            Vec2::new(world_x, world_y),
+                            Vec2::new(world_x + grid_size, world_y),
+                            Vec2::new(world_x + grid_size, world_y + grid_size),
+                            Vec2::new(world_x, world_y + grid_size),
+                        ];
+
+                        for i in 0..4 {
+                            gizmos.line_2d(corners[i], corners[(i + 1) % 4], preview_color);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Draw rectangle/line preview ONLY when in those modes AND actively dragging
+    match tile_painter.mode {
+        PaintMode::Rectangle | PaintMode::Line => {
+            // Show preview when dragging
+            if let (Some((start_x, start_y)), Some((end_x, end_y))) =
+                (tile_painter.drag_start, tile_painter.current_pos) {
+
+                // Convert tile coords to world coords
+                let start_world = Vec2::new(
+                    start_x as f32 * grid_size,
+                    start_y as f32 * grid_size,
+                );
+                let end_world = Vec2::new(
+                    end_x as f32 * grid_size,
+                    end_y as f32 * grid_size,
+                );
+
+                let preview_color = Color::srgba(0.0, 1.0, 1.0, 0.5); // Cyan semi-transparent
+
+                match tile_painter.mode {
+                    PaintMode::Rectangle => {
+                        // Draw rectangle preview
+                        let min_x = start_world.x.min(end_world.x);
+                        let max_x = start_world.x.max(end_world.x) + grid_size;
+                        let min_y = start_world.y.min(end_world.y);
+                        let max_y = start_world.y.max(end_world.y) + grid_size;
+
+                        // Draw filled rectangle using lines
+                        let corners = [
+                            Vec2::new(min_x, min_y),
+                            Vec2::new(max_x, min_y),
+                            Vec2::new(max_x, max_y),
+                            Vec2::new(min_x, max_y),
+                        ];
+
+                        // Draw outline
+                        for i in 0..4 {
+                            gizmos.line_2d(corners[i], corners[(i + 1) % 4], preview_color);
+                        }
+
+                        // Draw diagonals to show it's filled
+                        gizmos.line_2d(corners[0], corners[2], Color::srgba(0.0, 1.0, 1.0, 0.2));
+                        gizmos.line_2d(corners[1], corners[3], Color::srgba(0.0, 1.0, 1.0, 0.2));
+                    }
+                    PaintMode::Line => {
+                        // Draw line preview using Bresenham
+                        let tiles = calculate_line_tiles(start_x, start_y, end_x, end_y);
+
+                        for (tile_x, tile_y) in tiles {
+                            let world_x = tile_x as f32 * grid_size;
+                            let world_y = tile_y as f32 * grid_size;
+
+                            // Draw tile outline
+                            let corners = [
+                                Vec2::new(world_x, world_y),
+                                Vec2::new(world_x + grid_size, world_y),
+                                Vec2::new(world_x + grid_size, world_y + grid_size),
+                                Vec2::new(world_x, world_y + grid_size),
+                            ];
+
+                            for i in 0..4 {
+                                gizmos.line_2d(corners[i], corners[(i + 1) % 4], preview_color);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Calculate tiles along a line using Bresenham's algorithm
+fn calculate_line_tiles(start_x: u32, start_y: u32, end_x: u32, end_y: u32) -> Vec<(u32, u32)> {
+    let mut tiles = Vec::new();
+
+    let dx = (end_x as i32 - start_x as i32).abs();
+    let dy = (end_y as i32 - start_y as i32).abs();
+    let sx = if start_x < end_x { 1 } else { -1 };
+    let sy = if start_y < end_y { 1 } else { -1 };
+    let mut err = dx - dy;
+
+    let mut x = start_x as i32;
+    let mut y = start_y as i32;
+
+    loop {
+        tiles.push((x as u32, y as u32));
+
+        if x == end_x as i32 && y == end_y as i32 {
+            break;
+        }
+
+        let e2 = 2 * err;
+        if e2 > -dy {
+            err -= dy;
+            x += sx;
+        }
+        if e2 < dx {
+            err += dx;
+            y += sy;
+        }
+    }
+
+    tiles
 }

@@ -31,6 +31,12 @@ pub struct ProjectConfig {
     pub author: Option<String>,
     pub description: Option<String>,
     pub client_config: ClientConfig,
+    /// Path to the last opened scene (relative to assets/world/)
+    #[serde(default)]
+    pub last_opened_scene: Option<String>,
+    /// Path to the default scene to auto-load (relative to assets/world/)
+    #[serde(default)]
+    pub default_scene: Option<String>,
 }
 
 impl Default for ProjectConfig {
@@ -41,6 +47,8 @@ impl Default for ProjectConfig {
             author: None,
             description: None,
             client_config: ClientConfig::default(),
+            last_opened_scene: None,
+            default_scene: Some("main.bscene".to_string()),
         }
     }
 }

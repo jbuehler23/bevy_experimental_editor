@@ -137,7 +137,7 @@ pub fn handle_save_load(
     mut pending_restore: ResMut<PendingTilemapRestore>,
     mut commands: Commands,
     existing_canvas: Query<Entity, With<crate::map_canvas::MapCanvas>>,
-    current_project: Option<Res<crate::project_manager::CurrentProject>>,
+    mut current_project: Option<ResMut<crate::project_manager::CurrentProject>>,
     mut build_manager: ResMut<crate::build_manager::BuildManager>,
 ) {
     // Ctrl+S to save
@@ -152,6 +152,11 @@ pub fn handle_save_load(
                 &tilemap_query,
                 &tile_query,
             );
+
+            // Update last opened scene in project config
+            if let Some(ref mut project) = current_project {
+                update_last_opened_scene(project, &path);
+            }
 
             // Trigger background build after successful save
             if let Some(project) = current_project.as_ref() {
@@ -457,6 +462,23 @@ fn convert_to_relative_asset_path(absolute_path: &str) -> String {
 
     // Fallback: return the original path if "assets" not found
     absolute_path.to_string()
+}
+
+/// Update the last opened scene in the project config
+fn update_last_opened_scene(project: &mut crate::project_manager::CurrentProject, scene_path: &str) {
+    use std::path::Path;
+
+    // Convert absolute scene path to relative path (relative to assets/world/)
+    let path = Path::new(scene_path);
+
+    // Try to extract filename from path
+    if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
+        // Update last opened scene
+        let _ = project.update_config(|config| {
+            config.last_opened_scene = Some(filename.to_string());
+            info!("Updated last opened scene to: {}", filename);
+        });
+    }
 }
 
 fn create_spawn_config_for_type(entity_type: EntityType, position: Vector2) -> EntitySpawnConfig {

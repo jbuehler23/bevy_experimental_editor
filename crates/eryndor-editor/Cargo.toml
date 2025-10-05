@@ -27,5 +27,8 @@ toml = "0.8"
 # Threading/async
 crossbeam-channel = "0.5"
 
+# System paths
+dirs = "5.0"
+
 [lints]
 workspace = true

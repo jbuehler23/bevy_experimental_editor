@@ -1,6 +1,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use bevy::prelude::*;
 use eryndor_common::ProjectConfig;
+
+use crate::scene_loader_template::{SCENE_LOADER_TEMPLATE, PROJECT_FORMAT_TEMPLATE};
 
 /// Template for a new Bevy project
 #[derive(Debug, Clone, PartialEq)]
@@ -48,9 +51,11 @@ pub fn generate_project(
     // Generate main.rs
     generate_main_rs(project_path, &template)?;
 
-    // Generate tilemap_renderer.rs if using tilemap template
+    // Generate tilemap_renderer.rs and scene_loader.rs if using tilemap template
     if matches!(template, ProjectTemplate::Tilemap2D) {
         generate_tilemap_renderer(project_path)?;
+        generate_scene_loader(project_path)?;
+        generate_project_format(project_path)?;
     }
 
     // Generate .gitignore
@@ -104,8 +109,7 @@ fn generate_cargo_toml(
 bevy_ecs_tilemap = "0.16"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-clap = { version = "4.5", features = ["derive"] }
-eryndor-common = { path = "../eryndor-common" }"#
+clap = { version = "4.5", features = ["derive"] }"#
         }
     };
 
@@ -203,12 +207,16 @@ fn generate_tilemap_main() -> String {
     r#"use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use bevy::asset::{AssetLoader, LoadContext};
-use eryndor_common::{LevelData, BevyScene, ProjectMetadata};
 use clap::Parser;
 use std::path::PathBuf;
 
 mod tilemap_renderer;
+mod scene_loader;
+mod project_format;
+
 use tilemap_renderer::*;
+use scene_loader::*;
+use project_format::*;
 
 /// Game command line arguments
 #[derive(Parser, Debug)]
@@ -601,4 +609,15 @@ pub fn get_package_name_from_cargo_toml(project_path: &Path) -> Result<String, B
     }
 
     Err("Could not find package name in Cargo.toml".into())
+}
+/// Generate scene_loader.rs with inline data structures
+fn generate_scene_loader(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    fs::write(project_path.join("src/scene_loader.rs"), SCENE_LOADER_TEMPLATE)?;
+    Ok(())
+}
+
+/// Generate project_format.rs with project configuration structures
+fn generate_project_format(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    fs::write(project_path.join("src/project_format.rs"), PROJECT_FORMAT_TEMPLATE)?;
+    Ok(())
 }
