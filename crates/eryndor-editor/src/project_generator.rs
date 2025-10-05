@@ -61,6 +61,9 @@ pub fn generate_project(
     // Generate .gitignore
     generate_gitignore(project_path)?;
 
+    // Generate DEVELOPMENT.md with build optimization tips
+    generate_development_md(project_path)?;
+
     Ok(())
 }
 
@@ -126,11 +129,38 @@ path = "src/main.rs"
 [dependencies]
 {}
 
+[features]
+# Default to native dev build with hot-reloading
+default = ["dev_native"]
+dev = [
+    "bevy/dynamic_linking",  # CRITICAL: Huge compile time improvement
+    "bevy/bevy_dev_tools",
+    "bevy/bevy_ui_debug",
+    "bevy/track_location",
+]
+dev_native = [
+    "dev",
+    "bevy/file_watcher",
+    "bevy/embedded_watcher",
+]
+
 [profile.dev]
-opt-level = 1  # Improve development performance
+opt-level = 1  # Small optimization for better dev performance
 
 [profile.dev.package."*"]
-opt-level = 3  # Optimize dependencies for better performance
+opt-level = 3  # Optimize dependencies heavily
+
+[profile.dev.package.wgpu-types]
+debug-assertions = false  # Remove expensive debug assertions
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+
+[profile.web-release]
+inherits = "release"
+opt-level = "s"
+strip = "debuginfo"
 "#,
         package_name, package_name, dependencies
     );
@@ -558,38 +588,149 @@ Cargo.lock
 
 /// Generate .cargo/config.toml to optimize build performance and reduce memory usage
 fn generate_cargo_config(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    let cargo_config = r#"# Cargo configuration for optimized Bevy builds
-# This reduces memory usage during compilation
-
-[build]
-# Use a single codegen unit to reduce memory usage (slower but uses less RAM)
-# Increase this number if you have more RAM available
-# codegen-units = 1
-
-[profile.dev]
-# Optimize dependencies even in dev mode to reduce memory usage
-opt-level = 1
-
-[profile.dev.package."*"]
-# Optimize all dependencies in dev mode
-opt-level = 3
-
-# Use LLD linker for faster builds (Windows/Linux)
-[target.x86_64-pc-windows-msvc]
-linker = "rust-lld"
+    let cargo_config = r#"# Cargo configuration for fast Bevy builds
+# Based on bevy_new_2d best practices
+# See: https://github.com/TheBevyFlock/bevy_new_2d
 
 [target.x86_64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = [
+  # Mold linker - faster than lld on Linux
+  # Install: sudo apt-get install mold clang (Ubuntu)
+  #          sudo dnf install mold clang (Fedora)
+  #          sudo pacman -S mold clang (Arch)
+  # Uncomment to use:
+  # "-Clink-arg=-fuse-ld=mold",
+]
+rustdocflags = [
+  # "-Clink-arg=-fuse-ld=mold",
+]
 
-# Reduce parallel jobs to prevent OOM on machines with limited RAM
-# Uncomment and adjust if you're still running out of memory
+[target.x86_64-apple-darwin]
+rustflags = [
+  # macOS default ld64 linker is already very fast
+  # No changes needed
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+  # M1/M2/M3 Macs - default linker is optimal
+  # No changes needed
+]
+
+[target.x86_64-pc-windows-msvc]
+# LLD linker for Windows (much faster than default)
+# Install: cargo install -f cargo-binutils
+#          rustup component add llvm-tools
+linker = "rust-lld.exe"
+rustdocflags = ["-Clinker=rust-lld.exe"]
+
+# Optional: Use sccache for build caching (huge speedup on rebuilds)
+# Install: cargo install sccache
+# Uncomment to use:
 # [build]
-# jobs = 4
+# rustc-wrapper = "sccache"
 "#;
 
     fs::write(project_path.join(".cargo/config.toml"), cargo_config)?;
 
+    Ok(())
+}
+
+/// Generate DEVELOPMENT.md with build optimization tips and documentation
+fn generate_development_md(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let dev_md = r#"# Development Guide
+
+## Build Performance
+
+### Initial Build Times
+- **First build**: 5-15 minutes (compiling Bevy and all dependencies)
+- **Subsequent builds**: 10-60 seconds (incremental compilation)
+
+### Optimization Tips
+
+#### 1. Fast Linker (Already Configured ✅)
+- **Windows**: Using `rust-lld.exe` linker
+- **Linux**: Can use `mold` linker (uncomment in `.cargo/config.toml`)
+- **macOS**: Default linker is already optimal
+
+#### 2. Build Caching with sccache (Recommended)
+Install: `cargo install sccache`
+
+Then uncomment in `.cargo/config.toml`:
+```toml
+[build]
+rustc-wrapper = "sccache"
+```
+
+**Performance**: Reduces rebuild times by 50-80%!
+
+#### 3. Dynamic Linking (Already Enabled ✅)
+The `dev` feature enables `bevy/dynamic_linking`, which dramatically speeds up iterative builds.
+
+#### 4. Incremental Compilation
+Rust automatically uses incremental compilation. Clean your build with `cargo clean` only when necessary.
+
+### Running the Game
+
+```bash
+# Dev build with hot-reloading (faster compilation)
+cargo run
+
+# Release build (slower compilation, better performance)
+cargo run --release
+```
+
+### Asset Hot-Reloading
+
+With `file_watcher` enabled, the game automatically reloads `.bscene` files when you save them in the editor!
+
+**Edit → Save in Editor → Game Updates Instantly** ✨
+
+## Troubleshooting
+
+### Out of Memory During Compilation
+Reduce parallel jobs in `.cargo/config.toml`:
+```toml
+[build]
+jobs = 4  # Reduce from default (number of CPU cores)
+```
+
+### Slow Incremental Builds
+Try: `cargo clean && cargo build`
+
+### Windows Linker Issues
+Ensure LLVM tools are installed:
+```bash
+cargo install -f cargo-binutils
+rustup component add llvm-tools
+```
+
+## Editor Integration
+
+### Opening in Editor
+From the editor, use **File → Open Project** and select this directory.
+
+### Creating New Scenes
+1. **File → New Scene** or click the ➕ tab button
+2. Paint tiles using the tileset panel
+3. Save with **Ctrl+S**
+
+### Multi-Scene Workflow
+- Multiple scenes can be open simultaneously in tabs
+- Each scene maintains its own tilemap and entities
+- Switch between scenes by clicking their tabs
+
+## Performance Profiling
+
+To profile your game with Tracy:
+1. Remove `max_level_debug` and `release_max_level_warn` from `tracing` dependency
+2. Add `tracy` feature to Bevy
+3. Run with `cargo run --release --features bevy/trace_tracy`
+
+See: https://github.com/bevyengine/bevy/blob/main/docs/profiling.md
+"#;
+
+    fs::write(project_path.join("DEVELOPMENT.md"), dev_md)?;
     Ok(())
 }
 

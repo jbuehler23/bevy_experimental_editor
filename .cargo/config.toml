@@ -1,0 +1,41 @@
+# Cargo configuration for fast Bevy builds (workspace-level)
+# Based on bevy_new_2d best practices
+# See: https://github.com/TheBevyFlock/bevy_new_2d
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+  # Mold linker - faster than lld on Linux
+  # Install: sudo apt-get install mold clang (Ubuntu/Debian)
+  #          sudo dnf install mold clang (Fedora)
+  #          sudo pacman -S mold clang (Arch)
+  # Uncomment to use:
+  # "-Clink-arg=-fuse-ld=mold",
+]
+rustdocflags = [
+  # "-Clink-arg=-fuse-ld=mold",
+]
+
+[target.x86_64-apple-darwin]
+rustflags = [
+  # macOS default ld64 linker is already fast - no changes needed
+  # Nightly optimizations (optional):
+  # "-Zshare-generics=y",
+  # "-Zthreads=0",
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+  # M1/M2/M3 Macs - default linker is optimal
+  # Nightly optimizations (optional):
+  # "-Zshare-generics=y",
+  # "-Zthreads=0",
+]
+
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld.exe"
+rustdocflags = ["-Clinker=rust-lld.exe"]
+rustflags = [
+  # Nightly optimizations (optional):
+  # "-Zshare-generics=n",  # Must be 'n' with dynamic linking on Windows
+  # "-Zthreads=0",
+]
