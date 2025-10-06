@@ -34,6 +34,8 @@ pub fn ui_system(
     }
     if cli_panel.visible {
         egui::TopBottomPanel::bottom("cli_output")
+            .min_height(150.0)
+            .max_height(250.0)
             .default_height(200.0)
             .resizable(true)
             .show(ctx, |ui| {

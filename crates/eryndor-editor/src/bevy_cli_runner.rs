@@ -36,6 +36,8 @@ pub enum CLICommand {
     Run,
     /// Run web dev build (bevy run web)
     RunWeb,
+    /// Build native dev (cargo build)
+    Build,
     /// Build web bundle (bevy build web --bundle)
     BuildWeb,
     /// Run linter (bevy lint)
@@ -49,6 +51,7 @@ impl CLICommand {
         match self {
             CLICommand::Run => "Run Game",
             CLICommand::RunWeb => "Run Web",
+            CLICommand::Build => "Build",
             CLICommand::BuildWeb => "Build Web",
             CLICommand::Lint => "Lint",
             CLICommand::BuildRelease => "Build Release",
@@ -59,6 +62,7 @@ impl CLICommand {
         match self {
             CLICommand::Run => ("bevy", vec!["run"]),
             CLICommand::RunWeb => ("bevy", vec!["run", "web"]),
+            CLICommand::Build => ("cargo", vec!["build"]),
             CLICommand::BuildWeb => ("bevy", vec!["build", "web", "--bundle"]),
             CLICommand::Lint => ("bevy", vec!["lint"]),
             CLICommand::BuildRelease => ("cargo", vec!["build", "--release"]),

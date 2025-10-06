@@ -182,12 +182,12 @@ pub fn render_toolbar_content(
                 }
 
                 if ui
-                    .button("📦 Build")
-                    .on_hover_text("Build web bundle (bevy build web --bundle)")
+                    .button("🔨 Build")
+                    .on_hover_text("Build native (cargo build) - speeds up subsequent runs")
                     .clicked()
                 {
-                    if let Err(e) = cli_runner.run_command(CLICommand::BuildWeb) {
-                        error!("Failed to build web: {}", e);
+                    if let Err(e) = cli_runner.run_command(CLICommand::Build) {
+                        error!("Failed to build: {}", e);
                     }
                 }
 

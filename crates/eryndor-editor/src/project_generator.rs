@@ -117,6 +117,9 @@ fn generate_from_bevy_cli(
     fs::create_dir_all(project_path.join("assets/world"))?;
     fs::create_dir_all(project_path.join("assets/tilesets"))?;
 
+    // Add .cargo/config.toml for fast linking (bevy_new_2d doesn't include this)
+    generate_cargo_config_for_bevy_new_2d(project_path)?;
+
     // Update DEVELOPMENT.md with editor info
     let dev_md_path = project_path.join("DEVELOPMENT.md");
     if dev_md_path.exists() {
@@ -829,5 +832,45 @@ fn generate_scene_loader(project_path: &Path) -> Result<(), Box<dyn std::error::
 /// Generate project_format.rs with project configuration structures
 fn generate_project_format(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     fs::write(project_path.join("src/project_format.rs"), PROJECT_FORMAT_TEMPLATE)?;
+    Ok(())
+}
+
+/// Generate .cargo/config.toml for bevy_new_2d projects (adds fast linker)
+fn generate_cargo_config_for_bevy_new_2d(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    // Create .cargo directory
+    let cargo_dir = project_path.join(".cargo");
+    fs::create_dir_all(&cargo_dir)?;
+
+    // bevy_new_2d template doesn't include .cargo/config.toml
+    // Adding fast linker configuration dramatically speeds up builds
+    let cargo_config = r#"# Cargo configuration for fast Bevy builds
+# Added by Eryndor Editor
+
+[target.x86_64-pc-windows-msvc]
+# Use LLD linker (much faster than default MSVC linker)
+linker = "rust-lld.exe"
+rustflags = ["-Zshare-generics=y"]
+
+[target.x86_64-unknown-linux-gnu]
+# Use mold linker on Linux (fastest available)
+# Install: sudo apt install mold clang
+# Uncomment to use:
+# rustflags = ["-C", "link-arg=-fuse-ld=mold", "-Zshare-generics=y"]
+
+[target.x86_64-apple-darwin]
+# macOS uses zld linker (much faster than default ld)
+# Install: brew install michaeleisel/zld/zld
+# Uncomment to use:
+# rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/bin/zld", "-Zshare-generics=y"]
+
+[target.aarch64-apple-darwin]
+# M1/M2/M3 Macs - use zld linker
+# Install: brew install michaeleisel/zld/zld
+# Uncomment to use:
+# rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/bin/zld", "-Zshare-generics=y"]
+"#;
+
+    fs::write(cargo_dir.join("config.toml"), cargo_config)?;
+    info!("Added .cargo/config.toml with fast linker configuration");
     Ok(())
 }
