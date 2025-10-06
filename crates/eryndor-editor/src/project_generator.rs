@@ -91,16 +91,23 @@ fn generate_from_bevy_cli(
     let parent_dir = project_path.parent()
         .ok_or("Invalid project path")?;
 
-    // Run bevy new command
-    let output = Command::new("bevy")
+    // Check if directory already exists - bevy new fails if it does
+    if project_path.exists() {
+        return Err(format!("Directory already exists: {:?}", project_path).into());
+    }
+
+    // Run bevy new command with environment variable to skip itch.io prompt
+    // The bevy_new_2d template uses cargo-generate which respects the
+    // CARGO_GENERATE_VALUE_* environment variables to skip interactive prompts
+    let status = Command::new("bevy")
         .args(&["new", project_name, "--template", "2d"])
+        .env("CARGO_GENERATE_VALUE_ITCH_USERNAME", "")  // Skip itch.io username prompt
         .current_dir(parent_dir)
-        .output()
+        .status()
         .map_err(|e| format!("Failed to run 'bevy new': {}. Is bevy CLI installed?", e))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("bevy new failed: {}", stderr).into());
+    if !status.success() {
+        return Err(format!("bevy new failed with exit code: {:?}", status.code()).into());
     }
 
     // Add project.bvy (editor config) to the generated project

@@ -66,10 +66,12 @@ pub fn auto_load_scene_system(
                 }
             }
         } else {
-            warn!("Scene file not found: {:?}", scene_path);
+            debug!("Scene file not found: {:?}", scene_path);
+            // Mark as loaded so we don't spam the console every frame
+            auto_loader.has_loaded = true;
         }
     } else {
-        info!("No scene to auto-load");
+        debug!("No scene to auto-load");
         auto_loader.has_loaded = true;
     }
 }
