@@ -136,6 +136,16 @@ impl ComponentRegistry {
             },
         });
 
+        self.components.push(ComponentInfo {
+            name: "Tilemap",
+            category: ComponentCategory::Rendering,
+            description: "Tile-based map rendering",
+            spawn_fn: |entity| {
+                entity.insert(crate::tilemap_component::TilemapComponent::default());
+                entity.insert(crate::tilemap_component::TilemapLayers::default());
+            },
+        });
+
         // Note: TextureAtlas requires TextureAtlasLayout handle, skip for now
     }
 

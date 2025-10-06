@@ -9,13 +9,13 @@ mod camera;
 mod cli_output_panel;
 mod collision_editor;
 mod component_registry;
-mod dock_layout;
 mod gizmos;
 mod icons;
 mod inspector_panel;
 mod layer_manager;
 mod layer_panel;
 mod map_canvas;
+mod panel_manager;
 mod project_generator;
 mod project_manager;
 mod project_wizard;
@@ -29,6 +29,7 @@ mod selection;
 mod shortcuts;
 mod systems;
 mod tile_painter;
+mod tilemap_component;
 mod tileset_manager;
 mod tileset_panel;
 mod toolbar;
@@ -43,7 +44,7 @@ use cli_output_panel::*;
 use collision_editor::*;
 use gizmos::*;
 use layer_manager::*;
-use layer_panel::*;
+// use layer_panel::*;  // Commented out - using panel_manager instead
 use map_canvas::*;
 use project_manager::*;
 use project_wizard::*;
@@ -55,7 +56,8 @@ use shortcuts::*;
 use systems::*;
 use tile_painter::*;
 use tileset_manager::*;
-use tileset_panel::*;
+// use tileset_panel::*;  // Commented out - using panel_manager instead
+use tileset_panel::{SelectTileEvent, SelectTilesetEvent, handle_tile_selection_events};
 use toolbar::*;
 use ui::*;
 use workspace::*;
@@ -96,6 +98,7 @@ fn main() {
         .init_resource::<component_registry::EditorComponentRegistry>()
         .init_resource::<scene_tree_panel::SceneTreePanel>()
         .init_resource::<inspector_panel::InspectorPanel>()
+        .init_resource::<panel_manager::PanelManager>()
         // Project resources
         .init_resource::<ProjectSelection>()
         .init_resource::<ProjectWizard>()
@@ -136,11 +139,11 @@ fn main() {
                 project_wizard_ui,
                 update_cli_runner,         // Update bevy CLI runner
                 build_progress_overlay_ui, // Build progress overlay (MUST run before ui_system to be on top)
-                ui_system,
-                tileset_panel_ui,
-                layer_panel_ui,
-                scene_tree_panel::scene_tree_panel_system, // Scene tree panel
-                inspector_panel::inspector_panel_system,   // Inspector panel
+                (
+                    ui_system,
+                    panel_manager::render_left_panel,  // Left panel with Scene Tree and Layers tabs
+                    panel_manager::render_right_panel, // Right panel with Inspector and Tilesets tabs
+                ).chain(), // Ensure panels render in strict order within same frame
                 scene_tree_panel::handle_scene_tree_commands, // Handle scene tree commands
             )
                 .after(handle_global_shortcuts),
@@ -150,7 +153,7 @@ fn main() {
             (
                 sync_tilemap_on_scene_switch, // Sync tilemap when tab changes
                 disable_pancam_over_ui
-                    .after(tileset_panel_ui)
+                    .after(panel_manager::render_right_panel)
                     .after(ui_system),
                 handle_tile_selection_events,
                 handle_entity_placement,
@@ -178,6 +181,9 @@ fn main() {
                 update_map_canvas_on_layer_changes,
                 handle_paint_tile_events,
                 handle_canvas_click_painting,
+                // Tilemap component systems
+                tilemap_component::sync_tilemap_entities,
+                tilemap_component::cleanup_tilemap_entities,
             ),
         )
         // Collision editor systems

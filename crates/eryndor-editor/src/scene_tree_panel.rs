@@ -7,11 +7,11 @@ use bevy_egui::egui;
 
 /// Data needed to render an entity node (extracted from queries)
 #[derive(Clone)]
-struct EntityNodeData {
-    entity: Entity,
-    name: String,
-    has_children: bool,
-    children: Vec<Entity>,
+pub struct EntityNodeData {
+    pub entity: Entity,
+    pub name: String,
+    pub has_children: bool,
+    pub children: Vec<Entity>,
 }
 
 /// Render the scene tree panel content
@@ -103,18 +103,24 @@ fn render_entity_node(
 }
 
 /// Panel state for scene tree
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct SceneTreePanel {
     pub visible: bool,
     pub width: f32,
 }
 
-impl SceneTreePanel {
-    pub fn new() -> Self {
+impl Default for SceneTreePanel {
+    fn default() -> Self {
         Self {
             visible: true,
             width: 250.0,
         }
+    }
+}
+
+impl SceneTreePanel {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 

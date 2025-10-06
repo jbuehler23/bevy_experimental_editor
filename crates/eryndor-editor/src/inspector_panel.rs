@@ -217,18 +217,24 @@ fn render_add_component_menu(ui: &mut egui::Ui, component_registry: &ComponentRe
 }
 
 /// Panel state for inspector
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct InspectorPanel {
     pub visible: bool,
     pub width: f32,
 }
 
-impl InspectorPanel {
-    pub fn new() -> Self {
+impl Default for InspectorPanel {
+    fn default() -> Self {
         Self {
             visible: true,
             width: 300.0,
         }
+    }
+}
+
+impl InspectorPanel {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
