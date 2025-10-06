@@ -143,7 +143,6 @@ pub fn handle_save_load(
     mut commands: Commands,
     existing_canvas: Query<Entity, With<crate::map_canvas::MapCanvas>>,
     mut current_project: Option<ResMut<crate::project_manager::CurrentProject>>,
-    mut build_manager: ResMut<crate::build_manager::BuildManager>,
 ) {
     // Ctrl+S to save
     if keyboard.pressed(KeyCode::ControlLeft) && keyboard.just_pressed(KeyCode::KeyS) {
@@ -162,14 +161,6 @@ pub fn handle_save_load(
                 // Update last opened scene in project config
                 if let Some(ref mut project) = current_project {
                     update_last_opened_scene(project, &path);
-                }
-
-                // Trigger background build after successful save
-                if let Some(project) = current_project.as_ref() {
-                    if let Ok(package_name) = crate::project_generator::get_package_name_from_cargo_toml(project.root_path()) {
-                        info!("Starting background build after save...");
-                        build_manager.start_build(project.root_path().clone(), package_name);
-                    }
                 }
             } else {
                 // No path set, show Save As dialog

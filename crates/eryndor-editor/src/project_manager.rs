@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_egui::{egui, EguiContexts};
 use eryndor_common::{ProjectMetadata, ProjectConfig};
 use std::path::PathBuf;
 
@@ -194,6 +195,73 @@ pub fn handle_project_selection(
                     error!("Failed to open project: {}", e);
                     selection.state = ProjectSelectionState::Error(format!("Failed to open project: {}", e));
                 }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// UI for project selection dialog
+pub fn project_selection_ui(
+    mut contexts: EguiContexts,
+    mut selection: ResMut<ProjectSelection>,
+    mut wizard: ResMut<crate::project_wizard::ProjectWizard>,
+) {
+    // Clone the error message if needed to avoid borrow issues
+    let error_msg = if let ProjectSelectionState::Error(msg) = &selection.state {
+        Some(msg.clone())
+    } else {
+        None
+    };
+
+    match selection.state {
+        ProjectSelectionState::NeedSelection => {
+            egui::Window::new("Welcome to Bevy Editor")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(contexts.ctx_mut(), |ui| {
+                    ui.heading("Select a Project");
+                    ui.add_space(10.0);
+
+                    ui.label("Create a new Bevy project or open an existing one");
+                    ui.add_space(20.0);
+
+                    if ui.button("📁 Create New Project").clicked() {
+                        // Show project wizard
+                        wizard.show_wizard = true;
+                    }
+
+                    ui.add_space(10.0);
+
+                    if ui.button("📂 Open Existing Project").clicked() {
+                        // Open file dialog to select project directory
+                        if let Some(folder) = rfd::FileDialog::new()
+                            .set_title("Open Project")
+                            .pick_folder()
+                        {
+                            selection.state = ProjectSelectionState::Opening {
+                                path: folder.to_string_lossy().to_string(),
+                            };
+                        }
+                    }
+                });
+        }
+        ProjectSelectionState::Error(_) => {
+            if let Some(msg) = error_msg {
+                egui::Window::new("Error")
+                    .collapsible(false)
+                    .resizable(false)
+                    .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                    .show(contexts.ctx_mut(), |ui| {
+                        ui.colored_label(egui::Color32::RED, "Error:");
+                        ui.label(&msg);
+                        ui.add_space(10.0);
+
+                        if ui.button("Try Again").clicked() {
+                            selection.state = ProjectSelectionState::NeedSelection;
+                        }
+                    });
             }
         }
         _ => {}

@@ -4,11 +4,9 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_pancam::{PanCam, PanCamPlugin};
 
 mod bevy_cli_runner;
-mod build_manager;
 mod build_progress_ui;
 mod camera;
 mod cli_output_panel;
-mod client_launcher;
 mod collision_editor;
 mod gizmos;
 mod layer_manager;
@@ -16,7 +14,6 @@ mod layer_panel;
 mod map_canvas;
 mod project_generator;
 mod project_manager;
-mod project_ui;
 mod project_wizard;
 mod rendering;
 mod scene_loader;
@@ -34,18 +31,15 @@ mod ui;
 mod workspace;
 
 use bevy_cli_runner::*;
-use build_manager::*;
 use build_progress_ui::*;
 use camera::*;
 use cli_output_panel::*;
-use client_launcher::*;
 use collision_editor::*;
 use gizmos::*;
 use layer_manager::*;
 use layer_panel::*;
 use map_canvas::*;
 use project_manager::*;
-use project_ui::*;
 use project_wizard::*;
 use rendering::*;
 use scene_loader::*;
@@ -94,8 +88,6 @@ fn main() {
         // Project resources
         .init_resource::<ProjectSelection>()
         .init_resource::<ProjectWizard>()
-        .init_resource::<StandaloneClient>()
-        .init_resource::<BuildManager>()
         .init_resource::<BevyCLIRunner>()
         .init_resource::<CLIOutputPanel>()
         // Tilemap resources
@@ -129,9 +121,6 @@ fn main() {
                 auto_load_scene_system,
                 project_selection_ui,
                 project_wizard_ui,
-                play_controls_ui,
-                monitor_client_process,
-                poll_build_status,
                 update_cli_runner,         // Update bevy CLI runner
                 build_progress_overlay_ui, // Build progress overlay (MUST run before ui_system to be on top)
                 ui_system,
