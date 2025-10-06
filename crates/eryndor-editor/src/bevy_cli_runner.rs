@@ -1,13 +1,13 @@
 use bevy::prelude::*;
-use crossbeam_channel::{Receiver, Sender, unbounded};
-use std::process::{Child, Command, Stdio};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::io::{BufRead, BufReader};
-use std::thread;
 use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
+use std::thread;
 
 /// Manages running bevy CLI commands from within the editor
 #[derive(Resource)]
-pub struct BeevyCLIRunner {
+pub struct BevyCLIRunner {
     /// Path to the current project directory
     pub project_path: Option<PathBuf>,
     /// Currently running process (if any)
@@ -86,7 +86,7 @@ pub struct CLIOutputLine {
     pub timestamp: f64,
 }
 
-impl Default for BeevyCLIRunner {
+impl Default for BevyCLIRunner {
     fn default() -> Self {
         let (sender, receiver) = unbounded();
         Self {
@@ -100,7 +100,7 @@ impl Default for BeevyCLIRunner {
     }
 }
 
-impl BeevyCLIRunner {
+impl BevyCLIRunner {
     /// Set the current project path
     pub fn set_project_path(&mut self, path: PathBuf) {
         self.project_path = Some(path);
@@ -119,8 +119,11 @@ impl BeevyCLIRunner {
     /// Start running a CLI command
     pub fn run_command(&mut self, command: CLICommand) -> Result<(), String> {
         // Check if we have a project path and clone it
-        let project_path = self.project_path.as_ref()
-            .ok_or("No project loaded")?.clone();
+        let project_path = self
+            .project_path
+            .as_ref()
+            .ok_or("No project loaded")?
+            .clone();
 
         // Stop any currently running process
         if self.is_running() {
@@ -239,9 +242,6 @@ impl BeevyCLIRunner {
 }
 
 /// System to update CLI runner
-pub fn update_cli_runner(
-    mut cli_runner: ResMut<BeevyCLIRunner>,
-    time: Res<Time>,
-) {
+pub fn update_cli_runner(mut cli_runner: ResMut<BevyCLIRunner>, time: Res<Time>) {
     cli_runner.update(time.elapsed_secs_f64());
 }

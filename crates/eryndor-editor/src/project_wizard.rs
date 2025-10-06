@@ -3,6 +3,7 @@ use bevy_egui::{egui, EguiContexts};
 use crate::project_manager::{ProjectSelection, ProjectSelectionState};
 use crate::project_generator::{ProjectTemplate, generate_project};
 use std::path::PathBuf;
+use std::process::Command;
 
 /// Resource to track the project wizard state
 #[derive(Resource, Default)]
@@ -66,17 +67,51 @@ pub fn project_wizard_ui(
 
             // Template Selection
             ui.label("Project Template:");
+
             ui.radio_value(&mut wizard.selected_template, ProjectTemplate::Empty, ProjectTemplate::Empty.name());
             ui.label(format!("  └─ {}", ProjectTemplate::Empty.description()));
             ui.add_space(5.0);
 
             ui.radio_value(&mut wizard.selected_template, ProjectTemplate::Tilemap2D, ProjectTemplate::Tilemap2D.name());
             ui.label(format!("  └─ {}", ProjectTemplate::Tilemap2D.description()));
+            ui.add_space(5.0);
+
+            // BevyNew2D template with CLI check
+            let bevy_cli_available = check_bevy_cli_installed();
+
+            ui.add_enabled_ui(bevy_cli_available, |ui| {
+                ui.radio_value(&mut wizard.selected_template, ProjectTemplate::BevyNew2D, ProjectTemplate::BevyNew2D.name());
+            });
+
+            if !bevy_cli_available {
+                ui.label(format!("  └─ {} (requires bevy CLI)", ProjectTemplate::BevyNew2D.description()))
+                    .on_hover_text("Install with: cargo install bevy_cli");
+                ui.horizontal(|ui| {
+                    ui.label("    ");
+                    if ui.small_button("📋 Copy Install Command").clicked() {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            use arboard::Clipboard;
+                            if let Ok(mut clipboard) = Clipboard::new() {
+                                let _ = clipboard.set_text("cargo install bevy_cli");
+                                info!("Copied 'cargo install bevy_cli' to clipboard");
+                            }
+                        }
+                    }
+                });
+            } else {
+                ui.label(format!("  └─ {}", ProjectTemplate::BevyNew2D.description()));
+            }
+
             ui.add_space(15.0);
 
             // Action Buttons
             ui.horizontal(|ui| {
                 let can_create = !wizard.project_name.is_empty() && wizard.project_path.is_some();
+
+                // Disable if BevyNew2D selected but CLI not available
+                let can_create = can_create &&
+                    (wizard.selected_template != ProjectTemplate::BevyNew2D || bevy_cli_available);
 
                 if ui.add_enabled(can_create, egui::Button::new("Create Project")).clicked() {
                     // Create the project
@@ -121,4 +156,13 @@ pub fn project_wizard_ui(
                 }
             });
         });
+}
+
+/// Check if bevy CLI is installed on the system
+fn check_bevy_cli_installed() -> bool {
+    Command::new("bevy")
+        .arg("--version")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
 }

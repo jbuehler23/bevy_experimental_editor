@@ -94,6 +94,28 @@ impl CurrentProject {
     }
 }
 
+/// Build progress information
+#[derive(Clone)]
+pub struct BuildProgress {
+    pub start_time: std::time::Instant,
+    pub output_lines: Vec<String>,
+    pub current_stage: String,
+}
+
+impl BuildProgress {
+    pub fn new() -> Self {
+        Self {
+            start_time: std::time::Instant::now(),
+            output_lines: Vec::new(),
+            current_stage: "Starting build...".to_string(),
+        }
+    }
+
+    pub fn elapsed_secs(&self) -> f32 {
+        self.start_time.elapsed().as_secs_f32()
+    }
+}
+
 /// Project selection state for UI
 #[derive(Default)]
 pub enum ProjectSelectionState {
@@ -106,6 +128,8 @@ pub enum ProjectSelectionState {
     Opening {
         path: String,
     },
+    GeneratingTemplate,  // Running bevy new or custom template generation
+    InitialBuild(BuildProgress),  // First build to warm cache
     Ready,
     Error(String),
 }
@@ -121,7 +145,7 @@ pub fn handle_project_selection(
     mut commands: Commands,
     mut selection: ResMut<ProjectSelection>,
     mut workspace: Option<ResMut<crate::workspace::EditorWorkspace>>,
-    mut cli_runner: Option<ResMut<crate::bevy_cli_runner::BeevyCLIRunner>>,
+    mut cli_runner: Option<ResMut<crate::bevy_cli_runner::BevyCLIRunner>>,
 ) {
     match &selection.state {
         ProjectSelectionState::Creating { path, name } => {

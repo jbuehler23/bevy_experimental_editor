@@ -113,18 +113,12 @@ impl OpenScenes {
     }
 }
 
-/// Scene tab bar UI system
-pub fn scene_tabs_ui(
-    mut contexts: EguiContexts,
-    mut open_scenes: ResMut<OpenScenes>,
+/// Render scene tabs content (called from ui_system within a panel)
+pub fn render_scene_tabs_content(
+    ui: &mut egui::Ui,
+    open_scenes: &mut OpenScenes,
 ) {
-    let ctx = contexts.ctx_mut();
-
-    // Tab bar panel (below toolbar, above viewport)
-    egui::TopBottomPanel::top("scene_tabs")
-        .frame(egui::Frame::none().fill(ctx.style().visuals.panel_fill))
-        .show(ctx, |ui| {
-            ui.horizontal(|ui| {
+    ui.horizontal(|ui| {
                 let mut scene_to_close: Option<usize> = None;
                 let mut new_active_index: Option<usize> = None;
 
@@ -176,5 +170,4 @@ pub fn scene_tabs_ui(
                     open_scenes.close_scene(index);
                 }
             });
-        });
 }

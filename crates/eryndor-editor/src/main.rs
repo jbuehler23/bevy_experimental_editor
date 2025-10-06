@@ -3,60 +3,62 @@ use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_pancam::{PanCam, PanCamPlugin};
 
+mod bevy_cli_runner;
+mod build_manager;
+mod build_progress_ui;
 mod camera;
+mod cli_output_panel;
+mod client_launcher;
+mod collision_editor;
 mod gizmos;
-mod rendering;
-mod selection;
-mod systems;
-mod ui;
-mod tools;
-mod tileset_manager;
-mod tileset_panel;
 mod layer_manager;
 mod layer_panel;
-mod tile_painter;
-mod collision_editor;
 mod map_canvas;
-mod project_manager;
-mod client_launcher;
-mod project_ui;
 mod project_generator;
-mod scene_loader_template;
+mod project_manager;
+mod project_ui;
 mod project_wizard;
-mod build_manager;
-mod shortcuts;
-mod toolbar;
+mod rendering;
 mod scene_loader;
-mod workspace;
+mod scene_loader_template;
 mod scene_tabs;
-mod bevy_cli_runner;
-mod cli_output_panel;
+mod selection;
+mod shortcuts;
+mod systems;
+mod tile_painter;
+mod tileset_manager;
+mod tileset_panel;
+mod toolbar;
+mod tools;
+mod ui;
+mod workspace;
 
+use bevy_cli_runner::*;
+use build_manager::*;
+use build_progress_ui::*;
 use camera::*;
+use cli_output_panel::*;
+use client_launcher::*;
+use collision_editor::*;
 use gizmos::*;
-use rendering::*;
-use selection::*;
-use systems::*;
-use ui::*;
-use tileset_manager::*;
-use tileset_panel::*;
 use layer_manager::*;
 use layer_panel::*;
-use tile_painter::*;
 use map_canvas::*;
-use collision_editor::*;
 use project_manager::*;
-use client_launcher::*;
 use project_ui::*;
 use project_wizard::*;
-use build_manager::*;
-use shortcuts::*;
-use toolbar::*;
+use rendering::*;
 use scene_loader::*;
 use scene_tabs::*;
+use selection::*;
+use shortcuts::*;
+use systems::*;
+use tile_painter::*;
+use tileset_manager::*;
+use tileset_panel::*;
+use toolbar::*;
+use ui::*;
 use workspace::*;
-use bevy_cli_runner::*;
-use cli_output_panel::*;
 
 fn main() {
     App::new()
@@ -74,15 +76,17 @@ fn main() {
                     }),
                     ..default()
                 }),
-            EguiPlugin { enable_multipass_for_primary_context: false },
+            EguiPlugin {
+                enable_multipass_for_primary_context: false,
+            },
             WorldInspectorPlugin::default(),
             PanCamPlugin,
             bevy_ecs_tilemap::TilemapPlugin,
         ))
         // Editor resources
         .init_resource::<EditorState>()
-        .init_resource::<CurrentLevel>()  // Keep for backward compatibility temporarily
-        .init_resource::<OpenScenes>()     // Multi-scene tab system
+        .init_resource::<CurrentLevel>() // Keep for backward compatibility temporarily
+        .init_resource::<OpenScenes>() // Multi-scene tab system
         .init_resource::<EntityPalette>()
         .init_resource::<Selection>()
         .init_resource::<EditorEntityMap>()
@@ -92,7 +96,7 @@ fn main() {
         .init_resource::<ProjectWizard>()
         .init_resource::<StandaloneClient>()
         .init_resource::<BuildManager>()
-        .init_resource::<BeevyCLIRunner>()
+        .init_resource::<BevyCLIRunner>()
         .init_resource::<CLIOutputPanel>()
         // Tilemap resources
         .init_resource::<TilesetManager>()
@@ -108,53 +112,78 @@ fn main() {
         .add_event::<SelectTilesetEvent>()
         .add_event::<PaintTileEvent>()
         // Systems - Split into smaller groups to avoid tuple size limit
-        .add_systems(Startup, (setup_editor, ensure_default_layer_system, load_workspace_system))
+        .add_systems(
+            Startup,
+            (
+                setup_editor,
+                ensure_default_layer_system,
+                load_workspace_system,
+            ),
+        )
         // Keyboard shortcuts MUST run before UI to capture shortcuts
         .add_systems(Update, handle_global_shortcuts)
-        .add_systems(Update, (
-            handle_project_selection,
-            auto_load_scene_system,
-            project_selection_ui,
-            project_wizard_ui,
-            play_controls_ui,
-            monitor_client_process,
-            poll_build_status,
-            update_cli_runner,  // Update bevy CLI runner
-            cli_output_panel_ui,  // CLI output panel
-            ui_system,
-            toolbar_ui,
-            scene_tabs_ui,  // Multi-scene tab bar
-            sync_tilemap_on_scene_switch.after(scene_tabs_ui),  // Sync tilemap when tab changes
-            tileset_panel_ui,
-            layer_panel_ui,
-            disable_pancam_over_ui.after(tileset_panel_ui).after(ui_system),
-            handle_tile_selection_events,
-            handle_entity_placement,
-            handle_save_load,
-            handle_platform_editing,
-        ).after(handle_global_shortcuts))
-        .add_systems(Update, (
-            handle_selection,
-            handle_entity_deletion,
-            draw_grid,
-            draw_selection_gizmos,
-        ))
+        .add_systems(
+            Update,
+            (
+                handle_project_selection,
+                auto_load_scene_system,
+                project_selection_ui,
+                project_wizard_ui,
+                play_controls_ui,
+                monitor_client_process,
+                poll_build_status,
+                update_cli_runner,         // Update bevy CLI runner
+                build_progress_overlay_ui, // Build progress overlay (MUST run before ui_system to be on top)
+                ui_system,
+                tileset_panel_ui,
+                layer_panel_ui,
+            )
+                .after(handle_global_shortcuts),
+        )
+        .add_systems(
+            Update,
+            (
+                sync_tilemap_on_scene_switch, // Sync tilemap when tab changes
+                disable_pancam_over_ui
+                    .after(tileset_panel_ui)
+                    .after(ui_system),
+                handle_tile_selection_events,
+                handle_entity_placement,
+                handle_save_load,
+                handle_platform_editing,
+            ),
+        )
+        .add_systems(
+            Update,
+            (
+                handle_selection,
+                handle_entity_deletion,
+                draw_grid,
+                draw_selection_gizmos,
+            ),
+        )
         // Tilemap systems
-        .add_systems(Update, (
-            handle_tileset_load_requests,
-            update_tileset_dimensions,
-            setup_map_canvas,
-            handle_tile_painting,
-            update_map_canvas_on_layer_changes,
-            handle_paint_tile_events,
-            handle_canvas_click_painting,
-        ))
+        .add_systems(
+            Update,
+            (
+                handle_tileset_load_requests,
+                update_tileset_dimensions,
+                setup_map_canvas,
+                handle_tile_painting,
+                update_map_canvas_on_layer_changes,
+                handle_paint_tile_events,
+                handle_canvas_click_painting,
+            ),
+        )
         // Collision editor systems
-        .add_systems(Update, (
-            collision_editor_ui,
-            handle_collision_input,
-            render_collision_shapes,
-        ))
+        .add_systems(
+            Update,
+            (
+                collision_editor_ui,
+                handle_collision_input,
+                render_collision_shapes,
+            ),
+        )
         // Level restore system
         .add_systems(Update, restore_tilemap_from_level)
         .run();
@@ -171,7 +200,7 @@ fn setup_editor(mut commands: Commands) {
         PanCam {
             grab_buttons: vec![MouseButton::Middle, MouseButton::Right],
             enabled: true,
-            zoom_to_cursor: false,  // Disable scroll zoom to avoid conflicts with UI
+            zoom_to_cursor: false, // Disable scroll zoom to avoid conflicts with UI
             min_scale: 0.1,
             max_scale: 5.0,
             ..default()

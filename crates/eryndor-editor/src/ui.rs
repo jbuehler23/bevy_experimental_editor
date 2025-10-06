@@ -3,6 +3,11 @@ use bevy_egui::{egui, EguiContexts};
 use eryndor_common::*;
 
 use crate::{CurrentLevel, EditorState, EditorTool, EntityPalette, CollisionEditor};
+use crate::tile_painter::TilePainter;
+use crate::bevy_cli_runner::BevyCLIRunner;
+use crate::cli_output_panel::{CLIOutputPanel, render_cli_output_content, should_show_cli_output};
+use crate::toolbar::render_toolbar_content;
+use crate::scene_tabs::{OpenScenes, render_scene_tabs_content};
 
 /// Main UI system - draws all editor UI panels
 pub fn ui_system(
@@ -13,12 +18,28 @@ pub fn ui_system(
     mut collision_editor: ResMut<CollisionEditor>,
     workspace: Option<Res<crate::workspace::EditorWorkspace>>,
     mut project_selection: Option<ResMut<crate::project_manager::ProjectSelection>>,
-    open_scenes: Res<crate::scene_tabs::OpenScenes>,  // Multi-scene support
+    mut open_scenes: ResMut<OpenScenes>,  // Multi-scene support
+    mut tile_painter: ResMut<TilePainter>,
+    mut cli_runner: ResMut<BevyCLIRunner>,
+    mut cli_panel: ResMut<CLIOutputPanel>,
 ) {
     let ctx = contexts.ctx_mut();
 
     // We need to draw panels in the correct order for egui 0.32
     // Bottom and Top panels first, then side panels, then central panel
+
+    // CLI output panel (if visible)
+    if should_show_cli_output(&cli_runner) {
+        cli_panel.visible = true;
+    }
+    if cli_panel.visible {
+        egui::TopBottomPanel::bottom("cli_output")
+            .default_height(200.0)
+            .resizable(true)
+            .show(ctx, |ui| {
+                render_cli_output_content(ui, &mut cli_panel, &mut cli_runner);
+            });
+    }
 
     // Bottom status bar
     egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
@@ -115,6 +136,16 @@ pub fn ui_system(
                 }
             });
         });
+    });
+
+    // Toolbar panel
+    egui::TopBottomPanel::top("toolbar").show(ctx, |ui| {
+        render_toolbar_content(ui, &mut editor_state, &mut tile_painter, &mut cli_runner);
+    });
+
+    // Scene tabs panel
+    egui::TopBottomPanel::top("scene_tabs").show(ctx, |ui| {
+        render_scene_tabs_content(ui, &mut open_scenes);
     });
 
     // Left toolbar - Tools

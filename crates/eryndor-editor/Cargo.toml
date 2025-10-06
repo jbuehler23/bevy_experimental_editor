@@ -16,6 +16,9 @@ bevy_ecs_tilemap = "0.16"
 # File dialogs
 rfd = "0.15"
 
+# Clipboard support
+arboard = "3.4"
+
 # Image loading for tilesets
 image = "0.25"
 

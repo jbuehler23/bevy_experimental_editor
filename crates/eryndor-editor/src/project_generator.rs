@@ -10,15 +10,18 @@ use crate::scene_loader_template::{SCENE_LOADER_TEMPLATE, PROJECT_FORMAT_TEMPLAT
 pub enum ProjectTemplate {
     /// Empty Bevy project with minimal setup
     Empty,
-    /// 2D platformer with tilemap support
+    /// 2D platformer with tilemap support (custom)
     Tilemap2D,
+    /// bevy_new_2d template (requires bevy CLI)
+    BevyNew2D,
 }
 
 impl ProjectTemplate {
     pub fn name(&self) -> &str {
         match self {
             ProjectTemplate::Empty => "Empty Bevy Project",
-            ProjectTemplate::Tilemap2D => "2D Tilemap Game",
+            ProjectTemplate::Tilemap2D => "2D Tilemap Game (Custom)",
+            ProjectTemplate::BevyNew2D => "Bevy 2D Game (bevy_new_2d)",
         }
     }
 
@@ -26,7 +29,12 @@ impl ProjectTemplate {
         match self {
             ProjectTemplate::Empty => "A minimal Bevy project with basic setup",
             ProjectTemplate::Tilemap2D => "A 2D game with tilemap rendering and level loading support",
+            ProjectTemplate::BevyNew2D => "Official bevy_new_2d template with hot-reloading and fast builds (requires bevy CLI)",
         }
+    }
+
+    pub fn requires_bevy_cli(&self) -> bool {
+        matches!(self, ProjectTemplate::BevyNew2D)
     }
 }
 
@@ -36,6 +44,11 @@ pub fn generate_project(
     project_name: &str,
     template: ProjectTemplate,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Special handling for bevy_new_2d template
+    if matches!(template, ProjectTemplate::BevyNew2D) {
+        return generate_from_bevy_cli(project_path, project_name);
+    }
+
     // Create project directory
     fs::create_dir_all(project_path)?;
 
@@ -63,6 +76,47 @@ pub fn generate_project(
 
     // Generate DEVELOPMENT.md with build optimization tips
     generate_development_md(project_path)?;
+
+    Ok(())
+}
+
+/// Generate project using bevy CLI (for bevy_new_2d template)
+fn generate_from_bevy_cli(
+    project_path: &Path,
+    project_name: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use std::process::Command;
+
+    // Get parent directory where bevy will create the project
+    let parent_dir = project_path.parent()
+        .ok_or("Invalid project path")?;
+
+    // Run bevy new command
+    let output = Command::new("bevy")
+        .args(&["new", project_name, "--template", "2d"])
+        .current_dir(parent_dir)
+        .output()
+        .map_err(|e| format!("Failed to run 'bevy new': {}. Is bevy CLI installed?", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("bevy new failed: {}", stderr).into());
+    }
+
+    // Add project.bvy (editor config) to the generated project
+    generate_project_config(project_path, project_name)?;
+
+    // Add editor-specific assets directories
+    fs::create_dir_all(project_path.join("assets/world"))?;
+    fs::create_dir_all(project_path.join("assets/tilesets"))?;
+
+    // Update DEVELOPMENT.md with editor info
+    let dev_md_path = project_path.join("DEVELOPMENT.md");
+    if dev_md_path.exists() {
+        let existing = fs::read_to_string(&dev_md_path)?;
+        let updated = format!("{}\n\n## Eryndor Editor Integration\n\nThis project was created with the Eryndor Editor using the bevy_new_2d template.\n\n- Use the editor to create and edit levels\n- Levels are saved in `assets/world/` as `.bscene` files\n- Use the toolbar buttons to run, test, and build your game\n\n", existing);
+        fs::write(&dev_md_path, updated)?;
+    }
 
     Ok(())
 }
@@ -113,6 +167,10 @@ bevy_ecs_tilemap = "0.16"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 clap = { version = "4.5", features = ["derive"] }"#
+        }
+        ProjectTemplate::BevyNew2D => {
+            // Not used - bevy CLI generates its own Cargo.toml
+            ""
         }
     };
 
@@ -192,6 +250,10 @@ fn generate_main_rs(
     let main_rs = match template {
         ProjectTemplate::Empty => generate_empty_main(),
         ProjectTemplate::Tilemap2D => generate_tilemap_main(),
+        ProjectTemplate::BevyNew2D => {
+            // Not used - bevy CLI generates its own main.rs
+            String::new()
+        }
     };
 
     fs::write(project_path.join("src/main.rs"), main_rs)?;
