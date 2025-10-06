@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use crate::{EditorState, EditorTool, tile_painter::{TilePainter, PaintMode}};
+use crate::bevy_cli_runner::{BeevyCLIRunner, CLICommand};
 
 /// Toolbar UI system - displays tool selection and paint modes
 pub fn toolbar_ui(
     mut contexts: EguiContexts,
     mut editor_state: ResMut<EditorState>,
     mut tile_painter: ResMut<TilePainter>,
+    mut cli_runner: ResMut<BeevyCLIRunner>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -89,6 +91,57 @@ pub fn toolbar_ui(
             if ui.checkbox(&mut editor_state.grid_snap_enabled, "Grid (G)").changed() {
                 info!("Grid: {}", if editor_state.grid_snap_enabled { "ON" } else { "OFF" });
             }
+
+            // Bevy CLI buttons (right side)
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let has_project = cli_runner.project_path.is_some();
+                let is_running = cli_runner.is_running();
+
+                // Stop button (only shown when something is running)
+                if is_running {
+                    if ui.button("⏹ Stop").on_hover_text("Stop running process").clicked() {
+                        cli_runner.stop_current_process();
+                    }
+
+                    // Show what's running
+                    if let Some(cmd) = cli_runner.current_command() {
+                        ui.label(format!("Running: {}", cmd.name()));
+                    }
+                }
+
+                ui.separator();
+
+                // CLI command buttons
+                ui.add_enabled_ui(has_project && !is_running, |ui| {
+                    if ui.button("🚀 Run").on_hover_text("Run game (bevy run)").clicked() {
+                        if let Err(e) = cli_runner.run_command(CLICommand::Run) {
+                            error!("Failed to run game: {}", e);
+                        }
+                    }
+
+                    if ui.button("🌐 Web").on_hover_text("Run web build (bevy run web)").clicked() {
+                        if let Err(e) = cli_runner.run_command(CLICommand::RunWeb) {
+                            error!("Failed to run web: {}", e);
+                        }
+                    }
+
+                    if ui.button("📦 Build").on_hover_text("Build web bundle (bevy build web --bundle)").clicked() {
+                        if let Err(e) = cli_runner.run_command(CLICommand::BuildWeb) {
+                            error!("Failed to build web: {}", e);
+                        }
+                    }
+
+                    if ui.button("🔍 Lint").on_hover_text("Run linter (bevy lint)").clicked() {
+                        if let Err(e) = cli_runner.run_command(CLICommand::Lint) {
+                            error!("Failed to lint: {}", e);
+                        }
+                    }
+                });
+
+                if !has_project {
+                    ui.label("No project loaded");
+                }
+            });
         });
     });
 }

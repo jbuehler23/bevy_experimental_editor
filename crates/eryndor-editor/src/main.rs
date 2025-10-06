@@ -29,6 +29,8 @@ mod toolbar;
 mod scene_loader;
 mod workspace;
 mod scene_tabs;
+mod bevy_cli_runner;
+mod cli_output_panel;
 
 use camera::*;
 use gizmos::*;
@@ -53,6 +55,8 @@ use toolbar::*;
 use scene_loader::*;
 use scene_tabs::*;
 use workspace::*;
+use bevy_cli_runner::*;
+use cli_output_panel::*;
 
 fn main() {
     App::new()
@@ -88,6 +92,8 @@ fn main() {
         .init_resource::<ProjectWizard>()
         .init_resource::<StandaloneClient>()
         .init_resource::<BuildManager>()
+        .init_resource::<BeevyCLIRunner>()
+        .init_resource::<CLIOutputPanel>()
         // Tilemap resources
         .init_resource::<TilesetManager>()
         .init_resource::<tileset_panel::TilesetZoom>()
@@ -113,6 +119,8 @@ fn main() {
             play_controls_ui,
             monitor_client_process,
             poll_build_status,
+            update_cli_runner,  // Update bevy CLI runner
+            cli_output_panel_ui,  // CLI output panel
             ui_system,
             toolbar_ui,
             scene_tabs_ui,  // Multi-scene tab bar
