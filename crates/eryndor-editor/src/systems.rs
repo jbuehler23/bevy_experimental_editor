@@ -565,14 +565,15 @@ pub fn sync_tilemap_on_scene_switch(
         }
     }
 
-    // PHASE 2: Clear tilemap (set all tiles invisible)
+    // PHASE 2: Clear tilemap (set all tiles invisible AND reset texture)
     if let Ok(tile_storage) = tilemap_query.get_single() {
         for y in 0..map_dimensions.height {
             for x in 0..map_dimensions.width {
                 let tile_pos = bevy_ecs_tilemap::prelude::TilePos { x, y };
                 if let Some(tile_entity) = tile_storage.get(&tile_pos) {
-                    if let Ok((_tex, mut visible)) = tile_query.get_mut(tile_entity) {
-                        visible.0 = false;
+                    if let Ok((mut tex, mut visible)) = tile_query.get_mut(tile_entity) {
+                        tex.0 = 0;  // Reset texture index to 0
+                        visible.0 = false;  // Make invisible
                     }
                 }
             }

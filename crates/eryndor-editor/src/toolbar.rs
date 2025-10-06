@@ -1,4 +1,5 @@
 use crate::bevy_cli_runner::{BevyCLIRunner, CLICommand};
+use crate::icons::Icons;
 use crate::{
     tile_painter::{PaintMode, TilePainter},
     EditorState, EditorTool,
@@ -21,7 +22,7 @@ pub fn render_toolbar_content(
         if ui
             .selectable_label(
                 editor_state.current_tool == EditorTool::Select,
-                "🖱 Select (V)",
+                format!("{} Select (V)", Icons::ARROW_UP),
             )
             .on_hover_text("Select and move entities\nShortcut: V")
             .clicked()
@@ -33,7 +34,7 @@ pub fn render_toolbar_content(
             .selectable_label(
                 editor_state.current_tool == EditorTool::Platform
                     && tile_painter.mode == PaintMode::Single,
-                "🖌 Brush (B)",
+                format!("{} Brush (B)", Icons::BRUSH),
             )
             .on_hover_text("Paint single tiles\nShortcut: B")
             .clicked()
@@ -72,7 +73,7 @@ pub fn render_toolbar_content(
             .selectable_label(
                 editor_state.current_tool == EditorTool::Platform
                     && tile_painter.mode == PaintMode::BucketFill,
-                "🪣 Fill (F)",
+                format!("{} Fill (F)", Icons::BUCKET),
             )
             .on_hover_text("Bucket fill connected tiles\nShortcut: F")
             .clicked()
@@ -84,7 +85,7 @@ pub fn render_toolbar_content(
         if ui
             .selectable_label(
                 editor_state.current_tool == EditorTool::Eyedropper,
-                "💧 Eyedropper (I)",
+                format!("{} Eyedropper (I)", Icons::EYEDROPPER),
             )
             .on_hover_text("Pick tile from canvas\nShortcut: I or hold Alt")
             .clicked()
@@ -95,7 +96,7 @@ pub fn render_toolbar_content(
         if ui
             .selectable_label(
                 editor_state.current_tool == EditorTool::Erase,
-                "✖ Erase (E)",
+                format!("{} Erase (E)", Icons::ERASER),
             )
             .on_hover_text("Erase tiles\nShortcut: E")
             .clicked()
@@ -144,7 +145,7 @@ pub fn render_toolbar_content(
             // Stop button (only shown when something is running)
             if is_running {
                 if ui
-                    .button("⏹ Stop")
+                    .button(format!("{} Stop", Icons::STOP))
                     .on_hover_text("Stop running process")
                     .clicked()
                 {
@@ -162,7 +163,7 @@ pub fn render_toolbar_content(
             // CLI command buttons
             ui.add_enabled_ui(has_project && !is_running, |ui| {
                 if ui
-                    .button("🚀 Run")
+                    .button(format!("{} Run", Icons::PLAY))
                     .on_hover_text("Run game (bevy run)")
                     .clicked()
                 {
@@ -172,7 +173,7 @@ pub fn render_toolbar_content(
                 }
 
                 if ui
-                    .button("🌐 Web")
+                    .button(format!("{} Web", "🌐"))
                     .on_hover_text("Run web build (bevy run web)")
                     .clicked()
                 {
@@ -182,7 +183,7 @@ pub fn render_toolbar_content(
                 }
 
                 if ui
-                    .button("🔨 Build")
+                    .button(format!("{} Build", Icons::BUILD))
                     .on_hover_text("Build native (cargo build) - speeds up subsequent runs")
                     .clicked()
                 {
@@ -192,7 +193,7 @@ pub fn render_toolbar_content(
                 }
 
                 if ui
-                    .button("🔍 Lint")
+                    .button(format!("{} Lint", "🔍"))
                     .on_hover_text("Run linter (bevy lint)")
                     .clicked()
                 {

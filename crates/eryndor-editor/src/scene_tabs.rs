@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use eryndor_common::{LevelData, BevyScene};
 use std::path::PathBuf;
+use crate::icons::Icons;
 
 /// Represents a single open scene/level
 #[derive(Clone)]
@@ -139,7 +140,7 @@ pub fn render_scene_tabs_content(
                     }
 
                     // Close button (X) for each tab
-                    if ui.small_button("✖")
+                    if ui.small_button(Icons::CLOSE)
                         .on_hover_text("Close scene")
                         .clicked()
                     {
@@ -150,7 +151,7 @@ pub fn render_scene_tabs_content(
                 }
 
                 // New tab button
-                if ui.button("➕").on_hover_text("New scene").clicked() {
+                if ui.button(Icons::NEW).on_hover_text("New scene").clicked() {
                     let new_scene = OpenScene::new(
                         format!("Untitled {}", open_scenes.scenes.len() + 1),
                         LevelData::new("New Level".to_string(), 2000.0, 1000.0),

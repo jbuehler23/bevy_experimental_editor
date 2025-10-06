@@ -8,7 +8,11 @@ mod build_progress_ui;
 mod camera;
 mod cli_output_panel;
 mod collision_editor;
+mod component_registry;
+mod dock_layout;
 mod gizmos;
+mod icons;
+mod inspector_panel;
 mod layer_manager;
 mod layer_panel;
 mod map_canvas;
@@ -16,9 +20,11 @@ mod project_generator;
 mod project_manager;
 mod project_wizard;
 mod rendering;
+mod scene_editor;
 mod scene_loader;
 mod scene_loader_template;
 mod scene_tabs;
+mod scene_tree_panel;
 mod selection;
 mod shortcuts;
 mod systems;
@@ -85,6 +91,11 @@ fn main() {
         .init_resource::<Selection>()
         .init_resource::<EditorEntityMap>()
         .init_resource::<systems::PendingTilemapRestore>()
+        // Scene editor resources
+        .init_resource::<scene_editor::EditorScene>()
+        .init_resource::<component_registry::EditorComponentRegistry>()
+        .init_resource::<scene_tree_panel::SceneTreePanel>()
+        .init_resource::<inspector_panel::InspectorPanel>()
         // Project resources
         .init_resource::<ProjectSelection>()
         .init_resource::<ProjectWizard>()
@@ -103,6 +114,8 @@ fn main() {
         .add_event::<SelectTileEvent>()
         .add_event::<SelectTilesetEvent>()
         .add_event::<PaintTileEvent>()
+        // Scene editor events
+        .add_event::<scene_tree_panel::SceneTreeCommand>()
         // Systems - Split into smaller groups to avoid tuple size limit
         .add_systems(
             Startup,
@@ -126,6 +139,9 @@ fn main() {
                 ui_system,
                 tileset_panel_ui,
                 layer_panel_ui,
+                scene_tree_panel::scene_tree_panel_system, // Scene tree panel
+                inspector_panel::inspector_panel_system,   // Inspector panel
+                scene_tree_panel::handle_scene_tree_commands, // Handle scene tree commands
             )
                 .after(handle_global_shortcuts),
         )
