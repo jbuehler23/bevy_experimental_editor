@@ -105,7 +105,8 @@ pub fn gizmo_drag_interaction_system(
     camera_q: Query<(&Camera, &GlobalTransform)>,
     mut editor_scene: ResMut<EditorScene>,
     mut drag_state: ResMut<GizmoDragState>,
-    mut entity_query: Query<&mut Transform, With<EditorSceneEntity>>,
+    mut entity_query: Query<(&mut Transform, Option<&ChildOf>), With<EditorSceneEntity>>,
+    parent_query: Query<&GlobalTransform>,
     mut egui_contexts: Query<&mut EguiContext, With<PrimaryWindow>>,
     mut transform_events: EventWriter<TransformEditEvent>,
 ) {
@@ -134,7 +135,7 @@ pub fn gizmo_drag_interaction_system(
     // Start dragging
     if mouse_button.just_pressed(MouseButton::Left) && !drag_state.is_dragging {
         if let Some(selected_entity) = editor_scene.selected_entity {
-            if let Ok(transform) = entity_query.get(selected_entity) {
+            if let Ok((transform, _)) = entity_query.get(selected_entity) {
                 if let Some(world_pos) = get_world_pos() {
                     // Check if clicking on selected entity (within gizmo range)
                     let entity_pos = transform.translation.truncate();
@@ -157,22 +158,39 @@ pub fn gizmo_drag_interaction_system(
     if drag_state.is_dragging {
         if mouse_button.pressed(MouseButton::Left) {
             if let Some(dragged_entity) = drag_state.dragged_entity {
-                if let Ok(mut transform) = entity_query.get_mut(dragged_entity) {
+                if let Ok((mut transform, parent)) = entity_query.get_mut(dragged_entity) {
                     if let Some(current_world_pos) = get_world_pos() {
-                        // Calculate delta from drag start
+                        // Calculate delta from drag start in world space
                         let delta = current_world_pos - drag_state.drag_start_world;
+                        let new_world_pos = drag_state.entity_start_pos + delta;
 
-                        // Update entity position (direct modification for smooth dragging)
-                        let new_pos = drag_state.entity_start_pos + delta;
-                        transform.translation.x = new_pos.x;
-                        transform.translation.y = new_pos.y;
+                        // Convert world position to local space if entity has a parent
+                        let local_pos = if let Some(child_of) = parent {
+                            // Get parent's global transform
+                            if let Ok(parent_global_transform) = parent_query.get(child_of.0) {
+                                // Convert world position to parent's local space
+                                let parent_inverse = parent_global_transform.affine().inverse();
+                                let local_pos_3d = parent_inverse.transform_point3(new_world_pos.extend(0.0));
+                                local_pos_3d.truncate()
+                            } else {
+                                // Fallback: if parent not found, use world position
+                                new_world_pos
+                            }
+                        } else {
+                            // No parent - local position is same as world position
+                            new_world_pos
+                        };
+
+                        // Update entity local transform
+                        transform.translation.x = local_pos.x;
+                        transform.translation.y = local_pos.y;
                     }
                 }
             }
         } else {
             // Mouse released - end drag and send event
             if let Some(dragged_entity) = drag_state.dragged_entity {
-                if let Ok(transform) = entity_query.get(dragged_entity) {
+                if let Ok((transform, _)) = entity_query.get(dragged_entity) {
                     let final_pos = transform.translation.truncate();
 
                     // Send SetPosition event for undo/redo support

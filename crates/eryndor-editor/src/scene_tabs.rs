@@ -250,36 +250,60 @@ pub fn sync_editor_scene_on_tab_change(
 /// This runs after DynamicSceneRoot spawns entities from the loaded scene
 pub fn mark_loaded_scene_entities(
     mut commands: Commands,
-    loading_roots: Query<(Entity, &Children), (With<LoadingSceneRoot>, Changed<Children>)>,
-    unmarked_entities: Query<Entity, Without<crate::scene_editor::EditorSceneEntity>>,
-    children_query: Query<&Children>,
+    loading_roots: Query<Entity, With<LoadingSceneRoot>>,
+    scene_instance_query: Query<&bevy::scene::SceneInstance>,
+    scenes: Res<bevy::scene::SceneSpawner>,
+    unmarked_entities: Query<(Entity, Option<&Name>, Option<&Children>), (Without<crate::scene_editor::EditorSceneEntity>, Without<Window>)>,
+    mut editor_scene: ResMut<crate::scene_editor::EditorScene>,
 ) {
-    for (root_entity, root_children) in loading_roots.iter() {
-        info!("Scene loaded, marking entities as EditorSceneEntity");
+    // Check if any loading roots have spawned their scene instances
+    for root_entity in loading_roots.iter() {
+        // Check if this entity has a SceneInstance component that has finished loading
+        if let Ok(scene_instance) = scene_instance_query.get(root_entity) {
+            // Check if the scene instance is ready
+            if scenes.instance_is_ready(**scene_instance) {
+                info!("Scene instance ready for entity {:?}, marking spawned entities", root_entity);
 
-        // Recursively collect all descendants
-        let mut to_mark = Vec::new();
-        let mut stack: Vec<Entity> = root_children.to_vec();
+                // Find the actual scene root entity (the one with "Scene Root" name and children)
+                let mut actual_root = None;
+                let mut spawned_entities = Vec::new();
 
-        while let Some(entity) = stack.pop() {
-            if unmarked_entities.contains(entity) {
-                to_mark.push(entity);
+                for spawned_entity in scenes.iter_instance_entities(**scene_instance) {
+                    if let Ok((entity, name, children)) = unmarked_entities.get(spawned_entity) {
+                        spawned_entities.push(entity);
 
-                // Add children to stack for recursive processing
-                if let Ok(children) = children_query.get(entity) {
-                    stack.extend(children.to_vec());
+                        // Look for entity named "Scene Root" with children
+                        if let Some(entity_name) = name {
+                            if entity_name.as_str() == "Scene Root" && children.map_or(false, |c| !c.is_empty()) {
+                                actual_root = Some(entity);
+                                info!("Found actual scene root: {:?}", entity);
+                            }
+                        }
+                    }
+                }
+
+                // Mark all spawned entities
+                for entity in &spawned_entities {
+                    commands.entity(*entity).insert(crate::scene_editor::EditorSceneEntity);
+                }
+                info!("Marked {} loaded entities as EditorSceneEntity", spawned_entities.len());
+
+                // Update EditorScene.root_entity to point to the actual scene root
+                if let Some(new_root) = actual_root {
+                    info!("Updating EditorScene.root_entity from {:?} to {:?}", editor_scene.root_entity, new_root);
+                    editor_scene.root_entity = Some(new_root);
+
+                    // Remove EditorSceneEntity from loading container so it doesn't show in scene tree
+                    // Don't despawn it as it's still needed for scene management
+                    commands.entity(root_entity)
+                        .remove::<crate::scene_editor::EditorSceneEntity>()
+                        .remove::<LoadingSceneRoot>();
+                } else {
+                    warn!("Could not find actual scene root entity in loaded scene");
+                    // Remove the LoadingSceneRoot marker anyway
+                    commands.entity(root_entity).remove::<LoadingSceneRoot>();
                 }
             }
         }
-
-        info!("Marking {} loaded entities", to_mark.len());
-
-        // Mark all entities
-        for entity in to_mark {
-            commands.entity(entity).insert(crate::scene_editor::EditorSceneEntity);
-        }
-
-        // Remove the LoadingSceneRoot marker from the root
-        commands.entity(root_entity).remove::<LoadingSceneRoot>();
     }
 }

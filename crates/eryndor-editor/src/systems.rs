@@ -263,6 +263,18 @@ fn open_scene_dialog_world(world: &mut World) {
             .unwrap_or("Untitled")
             .to_string();
 
+        // Clear existing scene entities before loading new scene
+        let mut entities_to_despawn = Vec::new();
+        {
+            let mut query = world.query_filtered::<Entity, With<crate::scene_editor::EditorSceneEntity>>();
+            for entity in query.iter(world) {
+                entities_to_despawn.push(entity);
+            }
+        }
+        for entity in entities_to_despawn {
+            world.despawn(entity);
+        }
+
         // Load scene using asset server
         // Clone AssetServer path loading before taking mutable borrow
         let scene_handle = {
@@ -274,6 +286,7 @@ fn open_scene_dialog_world(world: &mut World) {
         world.commands().spawn((
             DynamicSceneRoot(scene_handle.clone()),
             crate::scene_editor::EditorSceneEntity,
+            crate::scene_tabs::LoadingSceneRoot,
         ));
 
         // Add new scene tab
