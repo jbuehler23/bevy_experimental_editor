@@ -156,6 +156,62 @@ pub fn setup_editor_scene(mut commands: Commands) {
     commands.insert_resource(editor_scene);
 }
 
+/// Event for editing entity transforms
+#[derive(Event, Debug, Clone)]
+pub enum TransformEditEvent {
+    /// Set position (replaces current position)
+    SetPosition { entity: Entity, position: Vec2 },
+    /// Translate by delta (adds to current position)
+    Translate { entity: Entity, delta: Vec2 },
+    /// Set rotation (replaces current rotation)
+    SetRotation { entity: Entity, rotation: f32 },
+    /// Set scale (replaces current scale)
+    SetScale { entity: Entity, scale: Vec2 },
+}
+
+/// System to handle transform edit events
+pub fn handle_transform_edit_events(
+    mut events: EventReader<TransformEditEvent>,
+    mut entity_query: Query<&mut Transform, With<EditorSceneEntity>>,
+    mut editor_scene: ResMut<EditorScene>,
+) {
+    for event in events.read() {
+        match event {
+            TransformEditEvent::SetPosition { entity, position } => {
+                if let Ok(mut transform) = entity_query.get_mut(*entity) {
+                    transform.translation.x = position.x;
+                    transform.translation.y = position.y;
+                    editor_scene.mark_modified();
+                    info!("Set entity {:?} position to {:?}", entity, position);
+                }
+            }
+            TransformEditEvent::Translate { entity, delta } => {
+                if let Ok(mut transform) = entity_query.get_mut(*entity) {
+                    transform.translation.x += delta.x;
+                    transform.translation.y += delta.y;
+                    editor_scene.mark_modified();
+                    info!("Translated entity {:?} by {:?}", entity, delta);
+                }
+            }
+            TransformEditEvent::SetRotation { entity, rotation } => {
+                if let Ok(mut transform) = entity_query.get_mut(*entity) {
+                    transform.rotation = Quat::from_rotation_z(*rotation);
+                    editor_scene.mark_modified();
+                    info!("Set entity {:?} rotation to {}", entity, rotation);
+                }
+            }
+            TransformEditEvent::SetScale { entity, scale } => {
+                if let Ok(mut transform) = entity_query.get_mut(*entity) {
+                    transform.scale.x = scale.x;
+                    transform.scale.y = scale.y;
+                    editor_scene.mark_modified();
+                    info!("Set entity {:?} scale to {:?}", entity, scale);
+                }
+            }
+        }
+    }
+}
+
 /// Plugin for scene editor functionality
 pub struct SceneEditorPlugin;
 
@@ -163,6 +219,8 @@ impl Plugin for SceneEditorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<EditorScene>()
             .register_type::<EditorSceneEntity>()
-            .add_systems(Startup, setup_editor_scene);
+            .add_event::<TransformEditEvent>()
+            .add_systems(Startup, setup_editor_scene)
+            .add_systems(Update, handle_transform_edit_events);
     }
 }

@@ -2,7 +2,7 @@
 
 use crate::component_registry::{ComponentCategory, ComponentRegistry, EditorComponentRegistry};
 use crate::icons::Icons;
-use crate::scene_editor::EditorScene;
+use crate::scene_editor::{EditorScene, TransformEditEvent};
 use bevy::prelude::*;
 use bevy_egui::egui;
 
@@ -26,6 +26,7 @@ pub fn render_inspector_panel(
     editor_scene: &EditorScene,
     component_data: Option<&EntityComponentData>,
     component_registry: &ComponentRegistry,
+    transform_events: &mut EventWriter<TransformEditEvent>,
 ) {
     ui.heading("Inspector");
     ui.separator();
@@ -56,7 +57,7 @@ pub fn render_inspector_panel(
         .auto_shrink([false; 2])
         .show(ui, |ui| {
             // Show existing components
-            render_existing_components(ui, data);
+            render_existing_components(ui, data, selected_entity, transform_events);
 
             ui.separator();
 
@@ -66,10 +67,15 @@ pub fn render_inspector_panel(
 }
 
 /// Render existing components on the entity
-fn render_existing_components(ui: &mut egui::Ui, data: &EntityComponentData) {
+fn render_existing_components(
+    ui: &mut egui::Ui,
+    data: &EntityComponentData,
+    entity: Entity,
+    transform_events: &mut EventWriter<TransformEditEvent>,
+) {
     // Transform component
     if let Some(transform) = &data.transform {
-        render_transform_component(ui, transform);
+        render_transform_component(ui, transform, entity, transform_events);
     }
 
     // Name component
@@ -109,14 +115,50 @@ fn render_existing_components(ui: &mut egui::Ui, data: &EntityComponentData) {
 }
 
 /// Render Transform component editor
-fn render_transform_component(ui: &mut egui::Ui, transform: &Transform) {
+fn render_transform_component(
+    ui: &mut egui::Ui,
+    transform: &Transform,
+    entity: Entity,
+    transform_events: &mut EventWriter<TransformEditEvent>,
+) {
     egui::CollapsingHeader::new(format!("{} Transform", Icons::TRANSFORM))
         .default_open(true)
         .show(ui, |ui| {
-            ui.label(format!("Position: {:.2?}", transform.translation));
-            ui.label(format!("Rotation: {:.2?}", transform.rotation));
-            ui.label(format!("Scale: {:.2?}", transform.scale));
-            ui.label("(Editing coming soon)");
+            let mut position = transform.translation.truncate();
+            let mut rotation_z = transform.rotation.to_euler(EulerRot::XYZ).2.to_degrees();
+            let mut scale = transform.scale.truncate();
+
+            ui.label("Position");
+            ui.horizontal(|ui| {
+                ui.label("X:");
+                if ui.add(egui::DragValue::new(&mut position.x).speed(1.0)).changed() {
+                    transform_events.send(TransformEditEvent::SetPosition { entity, position });
+                }
+                ui.label("Y:");
+                if ui.add(egui::DragValue::new(&mut position.y).speed(1.0)).changed() {
+                    transform_events.send(TransformEditEvent::SetPosition { entity, position });
+                }
+            });
+
+            ui.label("Rotation (degrees)");
+            if ui.add(egui::DragValue::new(&mut rotation_z).speed(1.0)).changed() {
+                transform_events.send(TransformEditEvent::SetRotation {
+                    entity,
+                    rotation: rotation_z.to_radians(),
+                });
+            }
+
+            ui.label("Scale");
+            ui.horizontal(|ui| {
+                ui.label("X:");
+                if ui.add(egui::DragValue::new(&mut scale.x).speed(0.01)).changed() {
+                    transform_events.send(TransformEditEvent::SetScale { entity, scale });
+                }
+                ui.label("Y:");
+                if ui.add(egui::DragValue::new(&mut scale.y).speed(0.01)).changed() {
+                    transform_events.send(TransformEditEvent::SetScale { entity, scale });
+                }
+            });
         });
 }
 
@@ -238,55 +280,23 @@ impl InspectorPanel {
     }
 }
 
-/// System to render the inspector panel
-pub fn inspector_panel_system(
-    mut contexts: bevy_egui::EguiContexts,
-    editor_scene: Res<EditorScene>,
-    mut panel: ResMut<InspectorPanel>,
-    component_registry: Res<EditorComponentRegistry>,
-    entity_query: Query<(
-        Entity,
-        Option<&Name>,
-        Option<&Transform>,
-        Option<&Visibility>,
-        Option<&Sprite>,
-        Option<&Camera2d>,
-        Option<&Node>,
-        Option<&Button>,
-        Option<&Text>,
-    )>,
-) {
-    if !panel.visible {
-        return;
-    }
-
-    // Find component data for selected entity
-    let component_data = editor_scene.selected_entity.and_then(|selected| {
-        entity_query.iter().find_map(|(entity, name, transform, visibility, sprite, camera2d, node, button, text)| {
-            if entity == selected {
-                Some(EntityComponentData {
-                    entity,
-                    name: name.map(|n| n.to_string()),
-                    transform: transform.copied(),
-                    visibility: visibility.copied(),
-                    sprite: sprite.cloned(),
-                    has_camera2d: camera2d.is_some(),
-                    node: node.cloned(),
-                    has_button: button.is_some(),
-                    text: text.cloned(),
-                })
-            } else {
-                None
-            }
-        })
-    });
-
-    egui::SidePanel::right("inspector_panel")
-        .default_width(panel.width)
-        .min_width(250.0)
-        .max_width(500.0)
-        .resizable(true)
-        .show(contexts.ctx_mut(), |ui| {
-            render_inspector_panel(ui, &editor_scene, component_data.as_ref(), &component_registry.registry);
-        });
-}
+// Old inspector_panel_system - now replaced by panel_manager integration
+// /// System to render the inspector panel
+// pub fn inspector_panel_system(
+//     mut contexts: bevy_egui::EguiContexts,
+//     editor_scene: Res<EditorScene>,
+//     mut panel: ResMut<InspectorPanel>,
+//     component_registry: Res<EditorComponentRegistry>,
+//     entity_query: Query<(
+//         Entity,
+//         Option<&Name>,
+//         Option<&Transform>,
+//         Option<&Visibility>,
+//         Option<&Sprite>,
+//         Option<&Camera2d>,
+//         Option<&Node>,
+//         Option<&Button>,
+//         Option<&Text>,
+//     )>,
+// ) {
+// }

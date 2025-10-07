@@ -48,6 +48,7 @@ pub fn render_left_panel(
     mut editor_scene: ResMut<EditorScene>,
     mut layer_manager: ResMut<LayerManager>,
     mut scene_tree_events: EventWriter<crate::scene_tree_panel::SceneTreeCommand>,
+    component_registry: Res<crate::component_registry::EditorComponentRegistry>,
     scene_entity_query: Query<(Entity, Option<&Name>, Option<&Children>), With<crate::scene_editor::EditorSceneEntity>>,
 ) {
     let ctx = contexts.ctx_mut();
@@ -80,7 +81,7 @@ pub fn render_left_panel(
                         })
                         .collect();
 
-                    render_scene_tree_panel(ui, &mut editor_scene, &entity_data);
+                    render_scene_tree_panel(ui, &mut editor_scene, &entity_data, &mut scene_tree_events, &component_registry.registry);
                 }
                 LeftPanelTab::Layers => {
                     render_layers_tab(ui, &mut layer_manager);
@@ -97,6 +98,7 @@ pub fn render_right_panel(
     component_registry: Res<EditorComponentRegistry>,
     tileset_manager: Res<TilesetManager>,
     mut tileset_zoom: ResMut<crate::tileset_panel::TilesetZoom>,
+    mut transform_events: EventWriter<crate::scene_editor::TransformEditEvent>,
     entity_query: Query<(
         Entity,
         Option<&Name>,
@@ -152,6 +154,7 @@ pub fn render_right_panel(
                         &editor_scene,
                         selected_entity_data.as_ref(),
                         &component_registry.registry,
+                        &mut transform_events,
                     );
                 }
                 RightPanelTab::Tilesets => {

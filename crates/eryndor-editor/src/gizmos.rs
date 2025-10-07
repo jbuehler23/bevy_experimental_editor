@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{EditorState, Selection, EditorEntity, EditorEntityType, EditorTool};
 use crate::tile_painter::{TilePainter, PaintMode};
+use crate::scene_editor::{EditorScene, EditorSceneEntity};
 
 /// Draw grid in the viewport
 pub fn draw_grid(
@@ -285,4 +286,113 @@ fn calculate_line_tiles(start_x: u32, start_y: u32, end_x: u32, end_y: u32) -> V
     }
 
     tiles
+}
+
+/// Draw selection highlights for EditorSceneEntity (new scene editor system)
+pub fn draw_scene_entity_gizmos(
+    mut gizmos: Gizmos,
+    editor_scene: Res<EditorScene>,
+    scene_entities: Query<(&GlobalTransform, Option<&Sprite>, Option<&Name>), With<EditorSceneEntity>>,
+) {
+    // Draw highlight for selected entity
+    if let Some(selected_entity) = editor_scene.selected_entity {
+        if let Ok((transform, sprite, name)) = scene_entities.get(selected_entity) {
+            let pos = transform.translation().truncate();
+
+            // Calculate bounds based on sprite size or default
+            let size = if let Some(sprite_comp) = sprite {
+                sprite_comp.custom_size.unwrap_or(Vec2::new(32.0, 32.0))
+            } else {
+                Vec2::new(32.0, 32.0) // Default size for entities without sprites
+            };
+
+            let half_size = size / 2.0;
+
+            // Draw selection rectangle
+            let corners = [
+                pos + Vec2::new(-half_size.x, -half_size.y),
+                pos + Vec2::new(half_size.x, -half_size.y),
+                pos + Vec2::new(half_size.x, half_size.y),
+                pos + Vec2::new(-half_size.x, half_size.y),
+            ];
+
+            // Draw yellow outline
+            for i in 0..4 {
+                gizmos.line_2d(corners[i], corners[(i + 1) % 4], Color::srgb(1.0, 1.0, 0.0));
+            }
+
+            // Draw move gizmo handles
+            draw_scene_move_handles(&mut gizmos, pos);
+
+            // Draw entity name above if available
+            if let Some(entity_name) = name {
+                // Draw a small indicator where the name would be
+                // (egui text rendering would be needed for actual text)
+                let name_pos = pos + Vec2::new(0.0, half_size.y + 10.0);
+                gizmos.circle_2d(name_pos, 2.0, Color::srgb(1.0, 1.0, 1.0));
+            }
+        }
+    }
+
+    // Draw subtle outlines for all scene entities (not selected)
+    for (transform, sprite, _) in scene_entities.iter() {
+        let pos = transform.translation().truncate();
+
+        // Skip if this is the selected entity
+        if Some(Entity::PLACEHOLDER) != editor_scene.selected_entity {
+            // Calculate bounds
+            let size = if let Some(sprite_comp) = sprite {
+                sprite_comp.custom_size.unwrap_or(Vec2::new(32.0, 32.0))
+            } else {
+                Vec2::new(32.0, 32.0)
+            };
+
+            let half_size = size / 2.0;
+
+            // Draw subtle gray outline for unselected entities
+            let corners = [
+                pos + Vec2::new(-half_size.x, -half_size.y),
+                pos + Vec2::new(half_size.x, -half_size.y),
+                pos + Vec2::new(half_size.x, half_size.y),
+                pos + Vec2::new(-half_size.x, half_size.y),
+            ];
+
+            for i in 0..4 {
+                gizmos.line_2d(corners[i], corners[(i + 1) % 4], Color::srgba(0.7, 0.7, 0.7, 0.3));
+            }
+        }
+    }
+}
+
+/// Draw move/transform handles for scene entities
+fn draw_scene_move_handles(gizmos: &mut Gizmos, position: Vec2) {
+    let handle_size = 6.0;
+    let axis_length = 40.0;
+
+    // Center handle (white)
+    gizmos.circle_2d(position, handle_size, Color::srgb(1.0, 1.0, 1.0));
+
+    // X-axis handle (red)
+    gizmos.line_2d(
+        position,
+        position + Vec2::new(axis_length, 0.0),
+        Color::srgb(1.0, 0.0, 0.0),
+    );
+    gizmos.circle_2d(
+        position + Vec2::new(axis_length, 0.0),
+        handle_size * 0.8,
+        Color::srgb(1.0, 0.0, 0.0),
+    );
+
+    // Y-axis handle (green)
+    gizmos.line_2d(
+        position,
+        position + Vec2::new(0.0, axis_length),
+        Color::srgb(0.0, 1.0, 0.0),
+    );
+    gizmos.circle_2d(
+        position + Vec2::new(0.0, axis_length),
+        handle_size * 0.8,
+        Color::srgb(0.0, 1.0, 0.0),
+    );
 }

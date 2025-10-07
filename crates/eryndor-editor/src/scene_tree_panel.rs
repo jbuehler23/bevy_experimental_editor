@@ -2,6 +2,7 @@
 
 use crate::icons::Icons;
 use crate::scene_editor::{EditorScene, EditorSceneEntity};
+use crate::component_registry::ComponentRegistry;
 use bevy::prelude::*;
 use bevy_egui::egui;
 
@@ -19,21 +20,78 @@ pub fn render_scene_tree_panel(
     ui: &mut egui::Ui,
     editor_scene: &mut EditorScene,
     entity_data: &[EntityNodeData],
+    events: &mut bevy::prelude::EventWriter<SceneTreeCommand>,
+    component_registry: &ComponentRegistry,
 ) {
     ui.heading("Scene Tree");
     ui.separator();
 
-    // Add entity button
+    // Add entity button with menu
     ui.horizontal(|ui| {
-        if ui.button(format!("{} Add Entity", Icons::NEW)).clicked() {
-            // Signal to add a new entity (will be handled in a system)
-            info!("Add entity clicked");
-        }
+        // Menu button for adding different entity types
+        ui.menu_button(format!("{} Add Entity", Icons::NEW), |ui| {
+            // Quick create options
+            if ui.button("Empty Entity").clicked() {
+                events.send(SceneTreeCommand::AddEntity {
+                    parent: editor_scene.selected_entity
+                });
+                info!("Add empty entity command sent");
+                ui.close_menu();
+            }
+
+            if ui.button("Sprite Entity").clicked() {
+                events.send(SceneTreeCommand::AddEntity {
+                    parent: editor_scene.selected_entity
+                });
+                // TODO: Add Sprite component after entity is created
+                info!("Add sprite entity command sent");
+                ui.close_menu();
+            }
+
+            if ui.button("Camera Entity").clicked() {
+                events.send(SceneTreeCommand::AddEntity {
+                    parent: editor_scene.selected_entity
+                });
+                // TODO: Add Camera2d component after entity is created
+                info!("Add camera entity command sent");
+                ui.close_menu();
+            }
+
+            ui.separator();
+            ui.label("Entity Templates:");
+
+            // List common entity templates
+            if ui.button("🎨 Sprite + Transform").clicked() {
+                events.send(SceneTreeCommand::AddEntity {
+                    parent: editor_scene.selected_entity
+                });
+                info!("Add sprite+transform entity");
+                ui.close_menu();
+            }
+
+            if ui.button("📷 Camera + Transform").clicked() {
+                events.send(SceneTreeCommand::AddEntity {
+                    parent: editor_scene.selected_entity
+                });
+                info!("Add camera+transform entity");
+                ui.close_menu();
+            }
+
+            if ui.button("🔲 UI Node").clicked() {
+                events.send(SceneTreeCommand::AddEntity {
+                    parent: editor_scene.selected_entity
+                });
+                info!("Add UI node entity");
+                ui.close_menu();
+            }
+        });
 
         if let Some(selected) = editor_scene.selected_entity {
             if ui.button(format!("{} Delete", Icons::CLOSE)).clicked() {
-                info!("Delete entity clicked: {:?}", selected);
-                // Signal to delete entity
+                events.send(SceneTreeCommand::DeleteEntity {
+                    entity: selected
+                });
+                info!("Delete entity command sent: {:?}", selected);
             }
         }
     });
@@ -124,37 +182,7 @@ impl SceneTreePanel {
     }
 }
 
-/// System to render the scene tree panel
-pub fn scene_tree_panel_system(
-    mut contexts: bevy_egui::EguiContexts,
-    mut editor_scene: ResMut<EditorScene>,
-    mut panel: ResMut<SceneTreePanel>,
-    entity_query: Query<(Entity, Option<&Name>, Option<&Children>), With<EditorSceneEntity>>,
-) {
-    if !panel.visible {
-        return;
-    }
-
-    // Extract entity data from queries
-    let entity_data: Vec<EntityNodeData> = entity_query
-        .iter()
-        .map(|(entity, name, children)| EntityNodeData {
-            entity,
-            name: name.map(|n| n.to_string()).unwrap_or_else(|| "Unnamed".to_string()),
-            has_children: children.map_or(false, |c| !c.is_empty()),
-            children: children.map_or_else(Vec::new, |c| c.iter().collect()),
-        })
-        .collect();
-
-    egui::SidePanel::left("scene_tree_panel")
-        .default_width(panel.width)
-        .min_width(200.0)
-        .max_width(400.0)
-        .resizable(true)
-        .show(contexts.ctx_mut(), |ui| {
-            render_scene_tree_panel(ui, &mut editor_scene, &entity_data);
-        });
-}
+// Old system removed - now using panel_manager::render_left_panel instead
 
 /// Commands for entity operations
 #[derive(Event)]

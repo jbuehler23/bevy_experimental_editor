@@ -35,6 +35,7 @@ mod tileset_panel;
 mod toolbar;
 mod tools;
 mod ui;
+mod viewport_selection;
 mod workspace;
 
 use bevy_cli_runner::*;
@@ -99,6 +100,7 @@ fn main() {
         .init_resource::<scene_tree_panel::SceneTreePanel>()
         .init_resource::<inspector_panel::InspectorPanel>()
         .init_resource::<panel_manager::PanelManager>()
+        .init_resource::<viewport_selection::GizmoDragState>()
         // Project resources
         .init_resource::<ProjectSelection>()
         .init_resource::<ProjectWizard>()
@@ -164,10 +166,13 @@ fn main() {
         .add_systems(
             Update,
             (
+                viewport_selection::viewport_entity_selection_system,
+                viewport_selection::gizmo_drag_interaction_system,
                 handle_selection,
                 handle_entity_deletion,
                 draw_grid,
                 draw_selection_gizmos,
+                draw_scene_entity_gizmos,
             ),
         )
         // Tilemap systems
