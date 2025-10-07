@@ -78,7 +78,7 @@ impl EditorScene {
 
 /// Save current EditorScene entities to .scn.ron file
 pub fn save_editor_scene_to_file(
-    world: &World,
+    world: &mut World,
     scene_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get type registry for serialization
@@ -96,9 +96,17 @@ pub fn save_editor_scene_to_file(
         return Ok(());
     }
 
+    // Remove VisibilityClass from all entities before serialization
+    // (contains TypeId which can't be serialized)
+    for &entity in &scene_entities {
+        if let Ok(mut entity_mut) = world.get_entity_mut(entity) {
+            entity_mut.remove::<bevy::render::view::visibility::VisibilityClass>();
+        }
+    }
+
     // Build DynamicScene from all scene entities
-    let mut scene_builder = DynamicSceneBuilder::from_world(world);
-    scene_builder = scene_builder.extract_entities(scene_entities.into_iter());
+    let scene_builder = DynamicSceneBuilder::from_world(world)
+        .extract_entities(scene_entities.into_iter());
     let dynamic_scene = scene_builder.build();
 
     // Serialize to RON
@@ -115,7 +123,7 @@ pub fn save_editor_scene_to_file(
 /// Load .scn.ron file into EditorScene using Bevy's asset system
 pub fn load_editor_scene_from_file(
     commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
+    asset_server: &AssetServer,
     scene_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!("Loading scene from: {}", scene_path);
@@ -136,30 +144,26 @@ pub fn load_editor_scene_from_file(
 /// This runs after SceneSpawner has instantiated the scene
 pub fn tag_spawned_scene_entities(
     mut commands: Commands,
-    scene_spawner: Res<SceneSpawner>,
     untagged_query: Query<Entity, (Without<EditorSceneEntity>, With<Transform>)>,
-    scene_root_query: Query<(&DynamicSceneRoot, Entity), With<EditorSceneEntity>>,
+    scene_root_query: Query<&DynamicSceneRoot, With<EditorSceneEntity>>,
     mut editor_scene: ResMut<EditorScene>,
 ) {
-    // Check if any scene roots are ready
-    for (scene_root, root_entity) in scene_root_query.iter() {
-        if let Some(instance_id) = scene_spawner.instance_id(&root_entity) {
-            if scene_spawner.instance_is_ready(instance_id) {
-                // Tag all untagged entities that were spawned by this scene
-                for entity in untagged_query.iter() {
-                    commands.entity(entity).insert(EditorSceneEntity);
-                    info!("Tagged entity {:?} as EditorSceneEntity", entity);
-                }
+    // If we have a scene root marker, tag all untagged Transform entities
+    if scene_root_query.iter().count() > 0 {
+        let mut tagged_count = 0;
+        for entity in untagged_query.iter() {
+            commands.entity(entity).insert(EditorSceneEntity);
+            tagged_count += 1;
 
-                // Set first tagged entity as root if not set
-                if editor_scene.root_entity.is_none() {
-                    editor_scene.root_entity = Some(root_entity);
-                    info!("Set scene root to {:?}", root_entity);
-                }
-
-                // Remove the DynamicSceneRoot marker from root entity
-                commands.entity(root_entity).remove::<DynamicSceneRoot>();
+            // Set first tagged entity as root if not set
+            if editor_scene.root_entity.is_none() {
+                editor_scene.root_entity = Some(entity);
+                info!("Set scene root to {:?}", entity);
             }
+        }
+
+        if tagged_count > 0 {
+            info!("Tagged {} entities as EditorSceneEntity", tagged_count);
         }
     }
 }

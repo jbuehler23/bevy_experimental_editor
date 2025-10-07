@@ -186,6 +186,10 @@ pub fn render_scene_tabs_content(
             });
 }
 
+/// Marker component to track which scene root is currently loading
+#[derive(Component)]
+pub struct LoadingSceneRoot;
+
 /// System to sync EditorScene with OpenScenes when tabs change
 pub fn sync_editor_scene_on_tab_change(
     mut tab_events: EventReader<SceneTabChanged>,
@@ -193,6 +197,8 @@ pub fn sync_editor_scene_on_tab_change(
     mut editor_scene: ResMut<crate::scene_editor::EditorScene>,
     scene_entities: Query<Entity, With<crate::scene_editor::EditorSceneEntity>>,
     mut name_buffer: ResMut<crate::panel_manager::NameEditBuffer>,
+    open_scenes: Res<OpenScenes>,
+    asset_server: Res<AssetServer>,
 ) {
     for event in tab_events.read() {
         info!("Scene tab changed to index {}, clearing editor scene entities", event.new_index);
@@ -209,18 +215,71 @@ pub fn sync_editor_scene_on_tab_change(
         // Clear name edit buffer
         name_buffer.buffer.clear();
 
-        // Create new root entity for the new scene
-        let root = commands
-            .spawn((
-                Name::new("Scene Root"),
-                Transform::default(),
-                Visibility::default(),
-                crate::scene_editor::EditorSceneEntity,
-            ))
-            .id();
+        // Get the new scene and load it if it has a file path
+        if let Some(scene) = open_scenes.scenes.get(event.new_index) {
+            if let Some(file_path) = &scene.file_path {
+                // Load scene from file
+                info!("Loading scene from file: {}", file_path);
+                let scene_handle = asset_server.load::<DynamicScene>(file_path.clone());
+                let root = commands.spawn((
+                    DynamicSceneRoot(scene_handle),
+                    crate::scene_editor::EditorSceneEntity,
+                    LoadingSceneRoot,
+                )).id();
+                editor_scene.root_entity = Some(root);
+                info!("Spawned scene root for loading: {:?}", root);
+            } else {
+                // New unsaved scene - create empty root
+                let root = commands
+                    .spawn((
+                        Name::new("Scene Root"),
+                        Transform::default(),
+                        Visibility::default(),
+                        crate::scene_editor::EditorSceneEntity,
+                    ))
+                    .id();
 
-        editor_scene.root_entity = Some(root);
+                editor_scene.root_entity = Some(root);
+                info!("Created new empty scene root: {:?}", root);
+            }
+        }
+    }
+}
 
-        info!("Created new scene root: {:?}", root);
+/// System to mark loaded scene entities with EditorSceneEntity component
+/// This runs after DynamicSceneRoot spawns entities from the loaded scene
+pub fn mark_loaded_scene_entities(
+    mut commands: Commands,
+    loading_roots: Query<(Entity, &Children), (With<LoadingSceneRoot>, Changed<Children>)>,
+    unmarked_entities: Query<Entity, Without<crate::scene_editor::EditorSceneEntity>>,
+    children_query: Query<&Children>,
+) {
+    for (root_entity, root_children) in loading_roots.iter() {
+        info!("Scene loaded, marking entities as EditorSceneEntity");
+
+        // Recursively collect all descendants
+        let mut to_mark = Vec::new();
+        let mut stack: Vec<Entity> = root_children.to_vec();
+
+        while let Some(entity) = stack.pop() {
+            if unmarked_entities.contains(entity) {
+                to_mark.push(entity);
+
+                // Add children to stack for recursive processing
+                if let Ok(children) = children_query.get(entity) {
+                    stack.extend(children.to_vec());
+                }
+            }
+        }
+
+        info!("Marking {} loaded entities", to_mark.len());
+
+        // Mark all entities
+        for entity in to_mark {
+            commands.entity(entity).insert(crate::scene_editor::EditorSceneEntity);
+        }
+
+        // Remove the LoadingSceneRoot marker from the root
+        commands.entity(root_entity).remove::<LoadingSceneRoot>();
     }
 }

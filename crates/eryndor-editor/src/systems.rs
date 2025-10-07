@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::scene::{DynamicScene, DynamicSceneRoot};
 use bevy::sprite::ColorMaterial;
 use eryndor_common::*;
 
@@ -132,46 +133,48 @@ pub fn handle_platform_editing(
 
 /// Handle saving and loading levels
 pub fn handle_save_load(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut open_scenes: ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
-    editor_state: Res<EditorState>,
-    mut tileset_manager: ResMut<crate::tileset_manager::TilesetManager>,
-    map_dimensions: Res<crate::map_canvas::MapDimensions>,
-    tilemap_query: Query<&bevy_ecs_tilemap::prelude::TileStorage, With<crate::map_canvas::MapCanvas>>,
-    tile_query: Query<(&bevy_ecs_tilemap::prelude::TileTextureIndex, &bevy_ecs_tilemap::prelude::TileVisible, &bevy_ecs_tilemap::prelude::TilePos)>,
-    mut pending_restore: ResMut<PendingTilemapRestore>,
-    mut commands: Commands,
-    existing_canvas: Query<Entity, With<crate::map_canvas::MapCanvas>>,
-    mut current_project: Option<ResMut<crate::project_manager::CurrentProject>>,
+    world: &mut World,
 ) {
-    // Ctrl+S to save
-    if keyboard.pressed(KeyCode::ControlLeft) && keyboard.just_pressed(KeyCode::KeyS) {
-        if let Some(scene) = open_scenes.active_scene_mut() {
-            if let Some(path) = scene.file_path.clone() {
-                save_level_with_tilemap(
-                    scene,
-                    &path,
-                    &editor_state,
-                    &tileset_manager,
-                    &map_dimensions,
-                    &tilemap_query,
-                    &tile_query,
-                );
+    // Access resources through world
+    let keyboard = world.resource::<ButtonInput<KeyCode>>().clone();
 
-                // Update last opened scene in project config
-                if let Some(ref mut project) = current_project {
-                    update_last_opened_scene(project, &path);
+    // Ctrl+S to save (new .scn.ron format)
+    if keyboard.pressed(KeyCode::ControlLeft) && keyboard.just_pressed(KeyCode::KeyS) {
+        // Clone the data we need before mutable borrow
+        let (file_path, has_scene) = {
+            let open_scenes = world.resource::<crate::scene_tabs::OpenScenes>();
+            let file_path = open_scenes.active_scene().and_then(|s| s.file_path.clone());
+            (file_path, open_scenes.active_scene().is_some())
+        };
+
+        if has_scene {
+            if let Some(path) = file_path {
+                // Save to .scn.ron using new DynamicScene system
+                match crate::scene_editor::save_editor_scene_to_file(world, &path) {
+                    Ok(_) => {
+                        // Update scene state
+                        let mut open_scenes = world.resource_mut::<crate::scene_tabs::OpenScenes>();
+                        if let Some(scene) = open_scenes.active_scene_mut() {
+                            scene.is_modified = false;
+                        }
+
+                        let mut editor_scene = world.resource_mut::<crate::scene_editor::EditorScene>();
+                        editor_scene.mark_saved();
+
+                        info!("Scene saved to: {}", path);
+
+                        // Update last opened scene in project config
+                        if let Some(mut project) = world.get_resource_mut::<crate::project_manager::CurrentProject>() {
+                            update_last_opened_scene(&mut project, &path);
+                        }
+                    }
+                    Err(e) => {
+                        error!("Failed to save scene: {}", e);
+                    }
                 }
             } else {
                 // No path set, show Save As dialog
-                save_as_dialog_with_tilemap(
-                    scene,
-                    &editor_state,
-                    &tileset_manager,
-                    &map_dimensions,
-                    &tilemap_query,
-                    &tile_query,
-                );
+                save_as_scene_dialog_world(world);
             }
         }
     }
@@ -180,24 +183,124 @@ pub fn handle_save_load(
     if keyboard.pressed(KeyCode::ControlLeft)
         && keyboard.pressed(KeyCode::ShiftLeft)
         && keyboard.just_pressed(KeyCode::KeyS) {
-        if let Some(scene) = open_scenes.active_scene_mut() {
-            save_as_dialog_with_tilemap(
-                scene,
-                &editor_state,
-                &tileset_manager,
-                &map_dimensions,
-                &tilemap_query,
-                &tile_query,
-            );
-        }
+        save_as_scene_dialog_world(world);
     }
 
     // Ctrl+O to open
     if keyboard.pressed(KeyCode::ControlLeft) && keyboard.just_pressed(KeyCode::KeyO) {
-        open_dialog(&mut open_scenes, &mut pending_restore, &mut tileset_manager, &mut commands, &existing_canvas);
+        open_scene_dialog_world(world);
     }
 }
 
+/// Save As dialog for .scn.ron files (World-based version)
+fn save_as_scene_dialog_world(world: &mut World) {
+    use rfd::FileDialog;
+
+    // Get current scene name, strip .scn.ron if already present
+    let scene_name = {
+        let open_scenes = world.resource::<crate::scene_tabs::OpenScenes>();
+        open_scenes
+            .active_scene()
+            .map(|s| {
+                let name = s.name.clone();
+                // Strip .scn.ron suffix if present to avoid double extension
+                if name.ends_with(".scn.ron") {
+                    name.trim_end_matches(".scn.ron").to_string()
+                } else {
+                    name
+                }
+            })
+            .unwrap_or_else(|| "Untitled".to_string())
+    };
+
+    if let Some(path) = FileDialog::new()
+        .add_filter("Scene", &["scn.ron"])
+        .set_file_name(&format!("{}.scn.ron", scene_name))
+        .save_file()
+    {
+        let path_str = path.to_string_lossy().to_string();
+
+        match crate::scene_editor::save_editor_scene_to_file(world, &path_str) {
+            Ok(_) => {
+                let new_name = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("Untitled")
+                    .to_string();
+
+                // Update scene state
+                let mut open_scenes = world.resource_mut::<crate::scene_tabs::OpenScenes>();
+                if let Some(scene) = open_scenes.active_scene_mut() {
+                    scene.file_path = Some(path_str.clone());
+                    scene.name = new_name;
+                    scene.is_modified = false;
+                }
+
+                let mut editor_scene = world.resource_mut::<crate::scene_editor::EditorScene>();
+                editor_scene.mark_saved();
+
+                info!("Scene saved to: {}", path_str);
+            }
+            Err(e) => {
+                error!("Failed to save scene: {}", e);
+            }
+        }
+    }
+}
+
+/// Open dialog for .scn.ron files (World-based version)
+fn open_scene_dialog_world(world: &mut World) {
+    use rfd::FileDialog;
+
+    if let Some(path) = FileDialog::new()
+        .add_filter("Scene", &["scn.ron"])
+        .pick_file()
+    {
+        let path_str = path.to_string_lossy().to_string();
+        let scene_name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("Untitled")
+            .to_string();
+
+        // Load scene using asset server
+        // Clone AssetServer path loading before taking mutable borrow
+        let scene_handle = {
+            let asset_server = world.resource::<AssetServer>();
+            asset_server.load::<DynamicScene>(path_str.clone())
+        };
+
+        // Spawn scene
+        world.commands().spawn((
+            DynamicSceneRoot(scene_handle.clone()),
+            crate::scene_editor::EditorSceneEntity,
+        ));
+
+        // Add new scene tab
+        let mut open_scenes = world.resource_mut::<crate::scene_tabs::OpenScenes>();
+        let new_scene = crate::scene_tabs::OpenScene {
+            name: scene_name.clone(),
+            file_path: Some(path_str.clone()),
+            level_data: eryndor_common::LevelData::new(scene_name, 2000.0, 1000.0), // Deprecated, for compat
+            is_modified: false,
+        };
+        open_scenes.add_scene(new_scene);
+        drop(open_scenes); // Release borrow
+
+        let mut editor_scene = world.resource_mut::<crate::scene_editor::EditorScene>();
+        editor_scene.is_modified = false;
+
+        info!("Scene loaded from: {}", path_str);
+    }
+}
+
+// ==============================================================================
+// OLD TILEMAP-BASED SAVE/LOAD FUNCTIONS - DEPRECATED
+// These are kept temporarily for backward compatibility with .bscene files
+// TODO: Remove after migration period
+// ==============================================================================
+
+#[allow(dead_code)]
 fn save_level_with_tilemap(
     scene: &mut crate::scene_tabs::OpenScene,  // Changed from CurrentLevel
     path: &str,

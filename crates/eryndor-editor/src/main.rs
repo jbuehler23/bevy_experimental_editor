@@ -123,6 +123,7 @@ fn main() {
         // Scene editor events
         .add_event::<scene_tree_panel::SceneTreeCommand>()
         .add_event::<scene_editor::TransformEditEvent>()
+        .add_event::<scene_editor::NameEditEvent>()
         .add_event::<scene_tabs::SceneTabChanged>()
         // Systems - Split into smaller groups to avoid tuple size limit
         .add_systems(
@@ -152,6 +153,7 @@ fn main() {
                 ).chain(), // Ensure panels render in strict order within same frame
                 scene_tree_panel::handle_scene_tree_commands, // Handle scene tree commands
                 scene_editor::handle_transform_edit_events, // Handle transform edit events
+                scene_editor::handle_name_edit_events, // Handle name edit events
             )
                 .after(handle_global_shortcuts),
         )
@@ -160,6 +162,7 @@ fn main() {
             (
                 sync_tilemap_on_scene_switch, // Sync tilemap when tab changes
                 scene_tabs::sync_editor_scene_on_tab_change, // Sync EditorScene when tab changes
+                scene_tabs::mark_loaded_scene_entities, // Mark loaded scene entities with EditorSceneEntity
                 disable_pancam_over_ui
                     .after(panel_manager::render_right_panel)
                     .after(ui_system),
