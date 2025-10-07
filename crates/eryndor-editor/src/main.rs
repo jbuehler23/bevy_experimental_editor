@@ -3,12 +3,15 @@ use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_pancam::{PanCam, PanCamPlugin};
 
+mod asset_browser;
+mod asset_browser_panel;
 mod bevy_cli_runner;
 mod build_progress_ui;
 mod camera;
 mod cli_output_panel;
 mod collision_editor;
 mod component_registry;
+mod entity_templates;
 mod gizmos;
 mod icons;
 mod inspector_panel;
@@ -115,6 +118,9 @@ fn main() {
         .init_resource::<CollisionEditor>()
         .init_resource::<MapDimensions>()
         .init_resource::<SceneAutoLoader>()
+        // Asset browser resources
+        .init_resource::<asset_browser::AssetBrowser>()
+        .init_resource::<asset_browser_panel::AssetBrowserPanel>()
         // Tilemap events
         .add_event::<LoadTilesetEvent>()
         .add_event::<SelectTileEvent>()
@@ -146,6 +152,7 @@ fn main() {
                 project_wizard_ui,
                 update_cli_runner,         // Update bevy CLI runner
                 build_progress_overlay_ui, // Build progress overlay (MUST run before ui_system to be on top)
+                asset_browser::scan_assets_system, // Scan for texture assets
                 (
                     ui_system,
                     panel_manager::render_left_panel,  // Left panel with Scene Tree and Layers tabs

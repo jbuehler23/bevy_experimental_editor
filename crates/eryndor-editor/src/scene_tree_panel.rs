@@ -30,42 +30,30 @@ pub fn render_scene_tree_panel(
     ui.horizontal(|ui| {
         // Menu button for adding different entity types
         ui.menu_button(format!("{} Add Entity", Icons::NEW), |ui| {
-            ui.label("All entities include Transform by default");
+            ui.label("Choose entity type to add:");
             ui.separator();
 
-            // Quick create options
-            if ui.button("Empty Entity").clicked() {
-                events.send(SceneTreeCommand::AddEntity {
-                    parent: editor_scene.selected_entity
-                });
-                info!("Add empty entity command sent");
-                ui.close_menu();
-            }
+            // List all entity templates
+            use crate::entity_templates::EntityTemplate;
 
-            if ui.button("🎨 Sprite Entity").clicked() {
-                events.send(SceneTreeCommand::AddEntity {
-                    parent: editor_scene.selected_entity
-                });
-                // TODO: Add Sprite component after entity is created
-                info!("Add sprite entity command sent");
-                ui.close_menu();
-            }
+            let templates = [
+                EntityTemplate::Empty,
+                EntityTemplate::Sprite,
+                // Note: Camera2D excluded - causes conflicts with editor camera
+                EntityTemplate::UINode,
+                EntityTemplate::Button,
+                EntityTemplate::Text,
+            ];
 
-            if ui.button("📷 Camera Entity").clicked() {
-                events.send(SceneTreeCommand::AddEntity {
-                    parent: editor_scene.selected_entity
-                });
-                // TODO: Add Camera2d component after entity is created
-                info!("Add camera entity command sent");
-                ui.close_menu();
-            }
-
-            if ui.button("🔲 UI Node Entity").clicked() {
-                events.send(SceneTreeCommand::AddEntity {
-                    parent: editor_scene.selected_entity
-                });
-                info!("Add UI node entity");
-                ui.close_menu();
+            for template in templates {
+                if ui.button(template.display_name()).clicked() {
+                    events.send(SceneTreeCommand::AddTemplateEntity {
+                        template,
+                        parent: editor_scene.selected_entity
+                    });
+                    info!("Add {} entity command sent", template.display_name());
+                    ui.close_menu();
+                }
             }
         });
 
@@ -182,6 +170,7 @@ impl SceneTreePanel {
 #[derive(Event)]
 pub enum SceneTreeCommand {
     AddEntity { parent: Option<Entity> },
+    AddTemplateEntity { template: crate::entity_templates::EntityTemplate, parent: Option<Entity> },
     DeleteEntity { entity: Entity },
     RenameEntity { entity: Entity, new_name: String },
     ReparentEntity { entity: Entity, new_parent: Option<Entity> },
@@ -195,6 +184,24 @@ pub fn handle_scene_tree_commands(
 ) {
     for event in events.read() {
         match event {
+            SceneTreeCommand::AddTemplateEntity { template, parent } => {
+                let entity = crate::entity_templates::spawn_from_template(&mut commands, *template, *parent);
+
+                // Set parent if not already done by template
+                if parent.is_none() {
+                    if let Some(root) = editor_scene.root_entity {
+                        info!("Parenting new entity {:?} to scene root {:?}", entity, root);
+                        commands.entity(entity).set_parent(root);
+                    } else {
+                        warn!("No parent for new entity {:?} - root_entity is None!", entity);
+                    }
+                }
+
+                editor_scene.select_entity(entity);
+                editor_scene.mark_modified();
+                info!("Added new {:?} entity: {:?}", template, entity);
+            }
+
             SceneTreeCommand::AddEntity { parent } => {
                 let entity = commands
                     .spawn((

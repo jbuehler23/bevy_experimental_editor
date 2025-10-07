@@ -20,6 +20,7 @@ pub enum LeftPanelTab {
 pub enum RightPanelTab {
     Inspector,
     Tilesets,
+    Assets,
 }
 
 #[derive(Resource)]
@@ -131,6 +132,7 @@ pub fn render_right_panel(
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut panel_manager.right_tab, RightPanelTab::Inspector, "🔍 Inspector");
                 ui.selectable_value(&mut panel_manager.right_tab, RightPanelTab::Tilesets, "🎨 Tilesets");
+                ui.selectable_value(&mut panel_manager.right_tab, RightPanelTab::Assets, "📦 Assets");
             });
 
             ui.separator();
@@ -169,6 +171,10 @@ pub fn render_right_panel(
                 }
                 RightPanelTab::Tilesets => {
                     render_tilesets_tab(ui, &tileset_manager, &mut tileset_zoom);
+                }
+                RightPanelTab::Assets => {
+                    ui.label("Asset Browser");
+                    ui.label("(Rendering to be implemented)");
                 }
             }
         });

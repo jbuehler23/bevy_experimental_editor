@@ -53,6 +53,8 @@ impl Icons {
     pub const FOLDER: &'static str = "[D]";
     pub const FOLDER_CLOSED: &'static str = "[D]";
     pub const FOLDER_OPEN_ALT: &'static str = "[D]";
+    pub const IMAGE: &'static str = "[IMG]";
+    pub const REFRESH: &'static str = "[R]";
 
     // Inspector
     pub const EYE: &'static str = "[V]";
