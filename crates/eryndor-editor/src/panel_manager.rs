@@ -108,6 +108,10 @@ pub fn render_right_panel(
     mut transform_events: EventWriter<crate::scene_editor::TransformEditEvent>,
     mut name_events: EventWriter<crate::scene_editor::NameEditEvent>,
     mut name_edit_buffer: ResMut<NameEditBuffer>,
+    mut asset_browser: ResMut<crate::asset_browser::AssetBrowser>,
+    asset_browser_panel: Res<crate::asset_browser_panel::AssetBrowserPanel>,
+    mut project_browser: ResMut<crate::project_browser::ProjectBrowser>,
+    mut project_browser_panel: ResMut<crate::project_browser_panel::ProjectBrowserPanel>,
     entity_query: Query<(
         Entity,
         Option<&Name>,
@@ -173,8 +177,7 @@ pub fn render_right_panel(
                     render_tilesets_tab(ui, &tileset_manager, &mut tileset_zoom);
                 }
                 RightPanelTab::Assets => {
-                    ui.label("Asset Browser");
-                    ui.label("(Rendering to be implemented)");
+                    crate::project_browser_panel::project_browser_panel_ui(ui, &mut project_browser, &mut project_browser_panel);
                 }
             }
         });

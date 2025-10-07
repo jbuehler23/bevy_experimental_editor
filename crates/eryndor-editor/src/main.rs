@@ -19,6 +19,8 @@ mod layer_manager;
 mod layer_panel;
 mod map_canvas;
 mod panel_manager;
+mod project_browser;
+mod project_browser_panel;
 mod project_generator;
 mod project_manager;
 mod project_wizard;
@@ -118,9 +120,12 @@ fn main() {
         .init_resource::<CollisionEditor>()
         .init_resource::<MapDimensions>()
         .init_resource::<SceneAutoLoader>()
-        // Asset browser resources
+        // Asset browser resources (deprecated - keeping for backward compatibility)
         .init_resource::<asset_browser::AssetBrowser>()
         .init_resource::<asset_browser_panel::AssetBrowserPanel>()
+        // Project browser resources
+        .init_resource::<project_browser::ProjectBrowser>()
+        .init_resource::<project_browser_panel::ProjectBrowserPanel>()
         // Tilemap events
         .add_event::<LoadTilesetEvent>()
         .add_event::<SelectTileEvent>()
@@ -152,7 +157,8 @@ fn main() {
                 project_wizard_ui,
                 update_cli_runner,         // Update bevy CLI runner
                 build_progress_overlay_ui, // Build progress overlay (MUST run before ui_system to be on top)
-                asset_browser::scan_assets_system, // Scan for texture assets
+                asset_browser::scan_assets_system, // Scan for texture assets (deprecated)
+                project_browser::refresh_project_browser_system, // Refresh project browser
                 (
                     ui_system,
                     panel_manager::render_left_panel,  // Left panel with Scene Tree and Layers tabs

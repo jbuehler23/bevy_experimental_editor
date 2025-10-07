@@ -52,7 +52,7 @@ impl AssetBrowser {
             return;
         }
 
-        let Some(ref assets_dir) = self.assets_directory else {
+        let Some(assets_dir) = self.assets_directory.clone() else {
             return;
         };
 
@@ -62,7 +62,7 @@ impl AssetBrowser {
         let extensions = ["png", "jpg", "jpeg", "bmp", "tga", "webp"];
 
         // Recursively scan for texture files
-        if let Ok(entries) = std::fs::read_dir(assets_dir) {
+        if let Ok(entries) = std::fs::read_dir(&assets_dir) {
             for entry in entries.flatten() {
                 if let Ok(metadata) = entry.metadata() {
                     if metadata.is_file() {
@@ -75,7 +75,7 @@ impl AssetBrowser {
                         }
                     } else if metadata.is_dir() {
                         // Recursively scan subdirectories
-                        self.scan_directory_recursive(asset_server, &entry.path(), assets_dir, &extensions);
+                        self.scan_directory_recursive(asset_server, &entry.path(), &assets_dir, &extensions);
                     }
                 }
             }

@@ -44,12 +44,16 @@ pub fn asset_browser_panel_ui(
     ui.separator();
 
     // Texture grid
-    let textures = asset_browser.get_sorted_textures();
-
-    if textures.is_empty() {
+    if asset_browser.textures.is_empty() {
         ui.label("No textures found");
         ui.label("Place .png, .jpg, or other image files in the assets directory");
     } else {
+        // Collect texture info to avoid borrow checker issues with closures
+        let textures: Vec<_> = asset_browser.get_sorted_textures()
+            .into_iter()
+            .map(|t| t.clone())
+            .collect();
+
         egui::ScrollArea::vertical().show(ui, |ui| {
             render_texture_grid(ui, asset_browser, &textures, panel);
         });
@@ -60,7 +64,7 @@ pub fn asset_browser_panel_ui(
 fn render_texture_grid(
     ui: &mut egui::Ui,
     asset_browser: &mut AssetBrowser,
-    textures: &[&TextureAssetInfo],
+    textures: &[TextureAssetInfo],
     panel: &AssetBrowserPanel,
 ) {
     let thumbnail_size = egui::vec2(panel.thumbnail_size, panel.thumbnail_size);
@@ -80,7 +84,7 @@ fn render_texture_grid(
                     .unwrap_or(false);
 
                 // Render texture item
-                render_texture_item(ui, asset_browser, texture_info, thumbnail_size, is_selected);
+                render_texture_item(ui, asset_browser, &texture_info, thumbnail_size, is_selected);
 
                 // New row after each set of columns
                 if (idx + 1) % columns == 0 {

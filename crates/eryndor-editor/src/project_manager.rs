@@ -147,6 +147,7 @@ pub fn handle_project_selection(
     mut selection: ResMut<ProjectSelection>,
     mut workspace: Option<ResMut<crate::workspace::EditorWorkspace>>,
     mut cli_runner: Option<ResMut<crate::bevy_cli_runner::BevyCLIRunner>>,
+    mut project_browser: Option<ResMut<crate::project_browser::ProjectBrowser>>,
 ) {
     match &selection.state {
         ProjectSelectionState::Creating { path, name } => {
@@ -162,6 +163,12 @@ pub fn handle_project_selection(
                     // Update CLI runner with new project path
                     if let Some(ref mut cli_runner) = cli_runner {
                         cli_runner.set_project_path(std::path::PathBuf::from(path));
+                    }
+
+                    // Initialize project browser with project root
+                    if let Some(ref mut browser) = project_browser {
+                        browser.set_project_root(project.metadata.root_path.clone());
+                        info!("Project browser initialized with root: {:?}", project.metadata.root_path);
                     }
 
                     commands.insert_resource(project);
@@ -186,6 +193,12 @@ pub fn handle_project_selection(
                     // Update CLI runner with new project path
                     if let Some(ref mut cli_runner) = cli_runner {
                         cli_runner.set_project_path(std::path::PathBuf::from(path));
+                    }
+
+                    // Initialize project browser with project root
+                    if let Some(ref mut browser) = project_browser {
+                        browser.set_project_root(project.metadata.root_path.clone());
+                        info!("Project browser initialized with root: {:?}", project.metadata.root_path);
                     }
 
                     commands.insert_resource(project);
