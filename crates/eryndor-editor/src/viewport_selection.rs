@@ -105,7 +105,7 @@ pub fn gizmo_drag_interaction_system(
     camera_q: Query<(&Camera, &GlobalTransform)>,
     mut editor_scene: ResMut<EditorScene>,
     mut drag_state: ResMut<GizmoDragState>,
-    mut entity_query: Query<(&mut Transform, Option<&ChildOf>), With<EditorSceneEntity>>,
+    mut entity_query: Query<(&mut Transform, &GlobalTransform, Option<&ChildOf>), With<EditorSceneEntity>>,
     parent_query: Query<&GlobalTransform>,
     mut egui_contexts: Query<&mut EguiContext, With<PrimaryWindow>>,
     mut transform_events: EventWriter<TransformEditEvent>,
@@ -135,18 +135,19 @@ pub fn gizmo_drag_interaction_system(
     // Start dragging
     if mouse_button.just_pressed(MouseButton::Left) && !drag_state.is_dragging {
         if let Some(selected_entity) = editor_scene.selected_entity {
-            if let Ok((transform, _)) = entity_query.get(selected_entity) {
+            if let Ok((transform, global_transform, _)) = entity_query.get(selected_entity) {
                 if let Some(world_pos) = get_world_pos() {
                     // Check if clicking on selected entity (within gizmo range)
-                    let entity_pos = transform.translation.truncate();
-                    let distance = entity_pos.distance(world_pos);
+                    // Use GlobalTransform for accurate world position
+                    let entity_world_pos = global_transform.translation().truncate();
+                    let distance = entity_world_pos.distance(world_pos);
 
                     // Allow dragging if clicking within gizmo range (50 pixels in world space)
                     if distance < 50.0 {
                         drag_state.is_dragging = true;
                         drag_state.dragged_entity = Some(selected_entity);
                         drag_state.drag_start_world = world_pos;
-                        drag_state.entity_start_pos = entity_pos;
+                        drag_state.entity_start_pos = entity_world_pos;
                         info!("Started dragging entity: {:?}", selected_entity);
                     }
                 }
@@ -158,7 +159,7 @@ pub fn gizmo_drag_interaction_system(
     if drag_state.is_dragging {
         if mouse_button.pressed(MouseButton::Left) {
             if let Some(dragged_entity) = drag_state.dragged_entity {
-                if let Ok((mut transform, parent)) = entity_query.get_mut(dragged_entity) {
+                if let Ok((mut transform, _, parent)) = entity_query.get_mut(dragged_entity) {
                     if let Some(current_world_pos) = get_world_pos() {
                         // Calculate delta from drag start in world space
                         let delta = current_world_pos - drag_state.drag_start_world;
@@ -190,7 +191,7 @@ pub fn gizmo_drag_interaction_system(
         } else {
             // Mouse released - end drag and send event
             if let Some(dragged_entity) = drag_state.dragged_entity {
-                if let Ok((transform, _)) = entity_query.get(dragged_entity) {
+                if let Ok((transform, _, _)) = entity_query.get(dragged_entity) {
                     let final_pos = transform.translation.truncate();
 
                     // Send SetPosition event for undo/redo support
