@@ -22,6 +22,9 @@ pub fn ui_system(
     mut tile_painter: ResMut<TilePainter>,
     mut cli_runner: ResMut<BevyCLIRunner>,
     mut cli_panel: ResMut<CLIOutputPanel>,
+    editor_scene: Res<crate::scene_editor::EditorScene>,
+    scene_entity_query: Query<Entity, With<crate::scene_editor::EditorSceneEntity>>,
+    mut tab_changed_events: EventWriter<crate::scene_tabs::SceneTabChanged>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -47,13 +50,14 @@ pub fn ui_system(
     egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
         ui.horizontal(|ui| {
             if let Some(scene) = open_scenes.active_scene() {
+                // Count scene entities (excluding root)
+                let entity_count = scene_entity_query.iter().count().saturating_sub(1);
+
                 ui.label(format!("Scene: {}", scene.name));
                 ui.separator();
-                ui.label(format!("Platforms: {}", scene.level_data.platforms.len()));
+                ui.label(format!("Entities: {}", entity_count));
                 ui.separator();
-                ui.label(format!("Entities: {}", scene.level_data.entities.len()));
-                ui.separator();
-                if scene.is_modified {
+                if editor_scene.is_modified {
                     ui.label("● Modified");
                 } else {
                     ui.label("○ Saved");
@@ -147,7 +151,7 @@ pub fn ui_system(
 
     // Scene tabs panel
     egui::TopBottomPanel::top("scene_tabs").show(ctx, |ui| {
-        render_scene_tabs_content(ui, &mut open_scenes);
+        render_scene_tabs_content(ui, &mut open_scenes, &mut tab_changed_events);
     });
 
     // Left toolbar - Tools

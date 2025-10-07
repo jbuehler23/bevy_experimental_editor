@@ -100,6 +100,7 @@ fn main() {
         .init_resource::<scene_tree_panel::SceneTreePanel>()
         .init_resource::<inspector_panel::InspectorPanel>()
         .init_resource::<panel_manager::PanelManager>()
+        .init_resource::<panel_manager::NameEditBuffer>()
         .init_resource::<viewport_selection::GizmoDragState>()
         // Project resources
         .init_resource::<ProjectSelection>()
@@ -121,11 +122,14 @@ fn main() {
         .add_event::<PaintTileEvent>()
         // Scene editor events
         .add_event::<scene_tree_panel::SceneTreeCommand>()
+        .add_event::<scene_editor::TransformEditEvent>()
+        .add_event::<scene_tabs::SceneTabChanged>()
         // Systems - Split into smaller groups to avoid tuple size limit
         .add_systems(
             Startup,
             (
                 setup_editor,
+                scene_editor::setup_editor_scene,
                 ensure_default_layer_system,
                 load_workspace_system,
             ),
@@ -147,6 +151,7 @@ fn main() {
                     panel_manager::render_right_panel, // Right panel with Inspector and Tilesets tabs
                 ).chain(), // Ensure panels render in strict order within same frame
                 scene_tree_panel::handle_scene_tree_commands, // Handle scene tree commands
+                scene_editor::handle_transform_edit_events, // Handle transform edit events
             )
                 .after(handle_global_shortcuts),
         )
@@ -154,6 +159,7 @@ fn main() {
             Update,
             (
                 sync_tilemap_on_scene_switch, // Sync tilemap when tab changes
+                scene_tabs::sync_editor_scene_on_tab_change, // Sync EditorScene when tab changes
                 disable_pancam_over_ui
                     .after(panel_manager::render_right_panel)
                     .after(ui_system),

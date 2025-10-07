@@ -30,6 +30,9 @@ pub fn render_scene_tree_panel(
     ui.horizontal(|ui| {
         // Menu button for adding different entity types
         ui.menu_button(format!("{} Add Entity", Icons::NEW), |ui| {
+            ui.label("All entities include Transform by default");
+            ui.separator();
+
             // Quick create options
             if ui.button("Empty Entity").clicked() {
                 events.send(SceneTreeCommand::AddEntity {
@@ -39,7 +42,7 @@ pub fn render_scene_tree_panel(
                 ui.close_menu();
             }
 
-            if ui.button("Sprite Entity").clicked() {
+            if ui.button("🎨 Sprite Entity").clicked() {
                 events.send(SceneTreeCommand::AddEntity {
                     parent: editor_scene.selected_entity
                 });
@@ -48,7 +51,7 @@ pub fn render_scene_tree_panel(
                 ui.close_menu();
             }
 
-            if ui.button("Camera Entity").clicked() {
+            if ui.button("📷 Camera Entity").clicked() {
                 events.send(SceneTreeCommand::AddEntity {
                     parent: editor_scene.selected_entity
                 });
@@ -57,27 +60,7 @@ pub fn render_scene_tree_panel(
                 ui.close_menu();
             }
 
-            ui.separator();
-            ui.label("Entity Templates:");
-
-            // List common entity templates
-            if ui.button("🎨 Sprite + Transform").clicked() {
-                events.send(SceneTreeCommand::AddEntity {
-                    parent: editor_scene.selected_entity
-                });
-                info!("Add sprite+transform entity");
-                ui.close_menu();
-            }
-
-            if ui.button("📷 Camera + Transform").clicked() {
-                events.send(SceneTreeCommand::AddEntity {
-                    parent: editor_scene.selected_entity
-                });
-                info!("Add camera+transform entity");
-                ui.close_menu();
-            }
-
-            if ui.button("🔲 UI Node").clicked() {
+            if ui.button("🔲 UI Node Entity").clicked() {
                 events.send(SceneTreeCommand::AddEntity {
                     parent: editor_scene.selected_entity
                 });
@@ -103,9 +86,20 @@ pub fn render_scene_tree_panel(
         .auto_shrink([false; 2])
         .show(ui, |ui| {
             if let Some(root_entity) = editor_scene.root_entity {
+                // Debug: show entity count
+                ui.label(format!("Entities: {}", entity_data.len()));
                 render_entity_node(ui, root_entity, editor_scene, entity_data, 0);
+
+                // Debug: Show all entities (temporary for debugging)
+                ui.separator();
+                ui.label("All EditorSceneEntity instances:");
+                for data in entity_data {
+                    if data.entity != root_entity {
+                        ui.label(format!("  {:?}: {} (children: {})", data.entity, data.name, data.children.len()));
+                    }
+                }
             } else {
-                ui.label("No scene loaded");
+                ui.label("No scene loaded - root_entity is None");
             }
         });
 }
@@ -207,15 +201,24 @@ pub fn handle_scene_tree_commands(
                         Name::new("New Entity"),
                         Transform::default(),
                         Visibility::default(),
+                        Sprite {
+                            color: Color::srgba(0.7, 0.7, 0.7, 0.8), // Gray semi-transparent
+                            custom_size: Some(Vec2::new(64.0, 64.0)),
+                            ..default()
+                        },
                         EditorSceneEntity,
                     ))
                     .id();
 
                 // Set parent if specified
                 if let Some(parent_entity) = parent {
+                    info!("Parenting new entity {:?} to selected parent {:?}", entity, parent_entity);
                     commands.entity(entity).set_parent(*parent_entity);
                 } else if let Some(root) = editor_scene.root_entity {
+                    info!("Parenting new entity {:?} to scene root {:?}", entity, root);
                     commands.entity(entity).set_parent(root);
+                } else {
+                    warn!("No parent for new entity {:?} - root_entity is None!", entity);
                 }
 
                 editor_scene.select_entity(entity);

@@ -93,11 +93,9 @@ pub fn viewport_entity_selection_system(
     if let Some(entity) = closest_entity {
         editor_scene.select_entity(entity);
         info!("Selected entity in viewport: {:?}", entity);
-    } else {
-        // Click on empty space - deselect
-        editor_scene.clear_selection();
-        info!("Deselected - clicked on empty space");
     }
+    // Note: Don't clear selection when clicking empty space
+    // This allows clicking on panels without losing selection
 }
 
 /// System to handle dragging selected entities via gizmo

@@ -2,7 +2,7 @@
 
 use crate::component_registry::{ComponentCategory, ComponentRegistry, EditorComponentRegistry};
 use crate::icons::Icons;
-use crate::scene_editor::{EditorScene, TransformEditEvent};
+use crate::scene_editor::{EditorScene, TransformEditEvent, NameEditEvent};
 use bevy::prelude::*;
 use bevy_egui::egui;
 
@@ -27,6 +27,8 @@ pub fn render_inspector_panel(
     component_data: Option<&EntityComponentData>,
     component_registry: &ComponentRegistry,
     transform_events: &mut EventWriter<TransformEditEvent>,
+    name_events: &mut EventWriter<NameEditEvent>,
+    name_edit_buffer: &mut String,
 ) {
     ui.heading("Inspector");
     ui.separator();
@@ -43,10 +45,24 @@ pub fn render_inspector_panel(
         return;
     };
 
-    // Entity header
+    // Entity header with inline name editing
     ui.horizontal(|ui| {
         ui.label(Icons::NODE);
-        ui.heading(data.name.as_deref().unwrap_or("Unnamed"));
+
+        // Initialize buffer with current name
+        if name_edit_buffer.is_empty() {
+            *name_edit_buffer = data.name.clone().unwrap_or_else(|| "Unnamed".to_string());
+        }
+
+        let response = ui.text_edit_singleline(name_edit_buffer);
+
+        // Send event when user finished editing (lost focus or pressed enter)
+        if response.lost_focus() && !name_edit_buffer.is_empty() {
+            name_events.write(NameEditEvent {
+                entity: selected_entity,
+                new_name: name_edit_buffer.clone(),
+            });
+        }
     });
 
     ui.label(format!("Entity ID: {:?}", selected_entity));

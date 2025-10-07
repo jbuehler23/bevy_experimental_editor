@@ -114,10 +114,17 @@ impl OpenScenes {
     }
 }
 
+/// Event triggered when scene tab changes
+#[derive(Event)]
+pub struct SceneTabChanged {
+    pub new_index: usize,
+}
+
 /// Render scene tabs content (called from ui_system within a panel)
 pub fn render_scene_tabs_content(
     ui: &mut egui::Ui,
     open_scenes: &mut OpenScenes,
+    tab_changed_events: &mut EventWriter<SceneTabChanged>,
 ) {
     ui.horizontal(|ui| {
                 let mut scene_to_close: Option<usize> = None;
@@ -157,11 +164,16 @@ pub fn render_scene_tabs_content(
                         LevelData::new("New Level".to_string(), 2000.0, 1000.0),
                     );
                     open_scenes.add_scene(new_scene);
+                    tab_changed_events.write(SceneTabChanged { new_index: open_scenes.active_index });
                 }
 
                 // Apply changes after iteration
                 if let Some(index) = new_active_index {
+                    let old_index = open_scenes.active_index;
                     open_scenes.set_active(index);
+                    if old_index != index {
+                        tab_changed_events.write(SceneTabChanged { new_index: index });
+                    }
                 }
                 if let Some(index) = scene_to_close {
                     if open_scenes.scenes[index].is_modified {
@@ -169,6 +181,46 @@ pub fn render_scene_tabs_content(
                         info!("Scene has unsaved changes, close anyway? (dialog not yet implemented)");
                     }
                     open_scenes.close_scene(index);
+                    tab_changed_events.write(SceneTabChanged { new_index: open_scenes.active_index });
                 }
             });
+}
+
+/// System to sync EditorScene with OpenScenes when tabs change
+pub fn sync_editor_scene_on_tab_change(
+    mut tab_events: EventReader<SceneTabChanged>,
+    mut commands: Commands,
+    mut editor_scene: ResMut<crate::scene_editor::EditorScene>,
+    scene_entities: Query<Entity, With<crate::scene_editor::EditorSceneEntity>>,
+    mut name_buffer: ResMut<crate::panel_manager::NameEditBuffer>,
+) {
+    for event in tab_events.read() {
+        info!("Scene tab changed to index {}, clearing editor scene entities", event.new_index);
+
+        // Despawn all existing scene entities
+        for entity in scene_entities.iter() {
+            commands.entity(entity).despawn();
+        }
+
+        // Reset editor scene state
+        editor_scene.selected_entity = None;
+        editor_scene.is_modified = false;
+
+        // Clear name edit buffer
+        name_buffer.buffer.clear();
+
+        // Create new root entity for the new scene
+        let root = commands
+            .spawn((
+                Name::new("Scene Root"),
+                Transform::default(),
+                Visibility::default(),
+                crate::scene_editor::EditorSceneEntity,
+            ))
+            .id();
+
+        editor_scene.root_entity = Some(root);
+
+        info!("Created new scene root: {:?}", root);
+    }
 }

@@ -2,7 +2,7 @@
 //! Uses Bevy's DynamicScene for serialization/deserialization
 
 use bevy::prelude::*;
-use bevy::scene::{DynamicScene, DynamicSceneBuilder};
+use bevy::scene::{DynamicScene, DynamicSceneBuilder, DynamicSceneRoot, SceneSpawner};
 
 /// Marker component for entities that are part of the edited scene
 /// (not editor UI elements)
@@ -76,78 +76,92 @@ impl EditorScene {
     }
 }
 
-/// Export the current scene to DynamicScene (for saving)
-pub fn export_scene_to_dynamic(
+/// Save current EditorScene entities to .scn.ron file
+pub fn save_editor_scene_to_file(
     world: &World,
-    editor_scene: &EditorScene,
-) -> Option<DynamicScene> {
-    let root_entity = editor_scene.root_entity?;
-
-    // Create a scene builder
-    let builder = DynamicSceneBuilder::from_world(world);
-
-    // Add the root entity and all its descendants
-    let builder = builder.extract_entity(root_entity);
-
-    // Build and return the scene
-    Some(builder.build())
-}
-
-/// Serialize scene to RON string
-pub fn serialize_scene(
-    scene: &DynamicScene,
-    type_registry: &AppTypeRegistry,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let type_registry = type_registry.read();
-    let serialized = scene.serialize(&type_registry)?;
-    Ok(serialized)
-}
-
-/// Deserialize scene from RON string (placeholder - needs proper implementation)
-pub fn deserialize_scene(
-    _ron_string: &str,
-    _type_registry: &AppTypeRegistry,
-) -> Result<DynamicScene, Box<dyn std::error::Error>> {
-    // TODO: Implement proper scene deserialization using Bevy's scene loader
-    // For now, return an empty scene
-    Ok(DynamicScene::default())
-}
-
-/// Load a scene from a .scn.ron file
-pub fn load_scene_from_file(
-    path: &str,
-    type_registry: &AppTypeRegistry,
-) -> Result<DynamicScene, Box<dyn std::error::Error>> {
-    let ron_string = std::fs::read_to_string(path)?;
-    deserialize_scene(&ron_string, type_registry)
-}
-
-/// Save a scene to a .scn.ron file
-pub fn save_scene_to_file(
-    path: &str,
-    scene: &DynamicScene,
-    type_registry: &AppTypeRegistry,
+    scene_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let serialized = serialize_scene(scene, type_registry)?;
-    std::fs::write(path, serialized)?;
+    // Get type registry for serialization
+    let type_registry = world.resource::<AppTypeRegistry>().clone();
+
+    // Collect all EditorSceneEntity entities
+    let mut scene_entities = Vec::new();
+    let mut query = world.query_filtered::<Entity, With<EditorSceneEntity>>();
+    for entity in query.iter(world) {
+        scene_entities.push(entity);
+    }
+
+    if scene_entities.is_empty() {
+        warn!("No entities to save in scene");
+        return Ok(());
+    }
+
+    // Build DynamicScene from all scene entities
+    let mut scene_builder = DynamicSceneBuilder::from_world(world);
+    scene_builder = scene_builder.extract_entities(scene_entities.into_iter());
+    let dynamic_scene = scene_builder.build();
+
+    // Serialize to RON
+    let type_registry = type_registry.read();
+    let ron_string = dynamic_scene.serialize(&type_registry)?;
+
+    // Write to file
+    std::fs::write(scene_path, ron_string)?;
+    info!("Scene saved to: {}", scene_path);
+
     Ok(())
 }
 
-/// Spawn a loaded scene into the world
-pub fn spawn_scene(
+/// Load .scn.ron file into EditorScene using Bevy's asset system
+pub fn load_editor_scene_from_file(
     commands: &mut Commands,
-    scene: &DynamicScene,
-    editor_scene: &mut EditorScene,
+    asset_server: &Res<AssetServer>,
+    scene_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    info!("Loading scene from: {}", scene_path);
+
+    // Load scene using Bevy's asset system
+    let scene_handle: Handle<DynamicScene> = asset_server.load(scene_path);
+
+    // Spawn scene into world with marker
+    commands.spawn((
+        DynamicSceneRoot(scene_handle.clone()),
+        EditorSceneEntity, // Mark the root so we can find it
+    ));
+
+    Ok(())
+}
+
+/// System to tag newly spawned scene entities with EditorSceneEntity marker
+/// This runs after SceneSpawner has instantiated the scene
+pub fn tag_spawned_scene_entities(
+    mut commands: Commands,
+    scene_spawner: Res<SceneSpawner>,
+    untagged_query: Query<Entity, (Without<EditorSceneEntity>, With<Transform>)>,
+    scene_root_query: Query<(&DynamicSceneRoot, Entity), With<EditorSceneEntity>>,
+    mut editor_scene: ResMut<EditorScene>,
 ) {
-    // Spawn the scene
-    let root = commands.spawn_empty().id();
+    // Check if any scene roots are ready
+    for (scene_root, root_entity) in scene_root_query.iter() {
+        if let Some(instance_id) = scene_spawner.instance_id(&root_entity) {
+            if scene_spawner.instance_is_ready(instance_id) {
+                // Tag all untagged entities that were spawned by this scene
+                for entity in untagged_query.iter() {
+                    commands.entity(entity).insert(EditorSceneEntity);
+                    info!("Tagged entity {:?} as EditorSceneEntity", entity);
+                }
 
-    // TODO: Actually spawn the scene entities using scene.write_to_world()
-    // This requires more complex integration with Bevy's scene system
+                // Set first tagged entity as root if not set
+                if editor_scene.root_entity.is_none() {
+                    editor_scene.root_entity = Some(root_entity);
+                    info!("Set scene root to {:?}", root_entity);
+                }
 
-    editor_scene.root_entity = Some(root);
-    editor_scene.selected_entity = None;
-    editor_scene.is_modified = false;
+                // Remove the DynamicSceneRoot marker from root entity
+                commands.entity(root_entity).remove::<DynamicSceneRoot>();
+            }
+        }
+    }
 }
 
 /// System to initialize editor scene on startup
@@ -167,6 +181,13 @@ pub enum TransformEditEvent {
     SetRotation { entity: Entity, rotation: f32 },
     /// Set scale (replaces current scale)
     SetScale { entity: Entity, scale: Vec2 },
+}
+
+/// Event for editing entity name
+#[derive(Event, Debug, Clone)]
+pub struct NameEditEvent {
+    pub entity: Entity,
+    pub new_name: String,
 }
 
 /// System to handle transform edit events
@@ -212,15 +233,47 @@ pub fn handle_transform_edit_events(
     }
 }
 
+/// System to handle name edit events
+pub fn handle_name_edit_events(
+    mut events: EventReader<NameEditEvent>,
+    mut entity_query: Query<&mut Name, With<EditorSceneEntity>>,
+    mut editor_scene: ResMut<EditorScene>,
+) {
+    for event in events.read() {
+        if let Ok(mut name) = entity_query.get_mut(event.entity) {
+            name.set(event.new_name.clone());
+            editor_scene.mark_modified();
+            info!("Renamed entity {:?} to '{}'", event.entity, event.new_name);
+        }
+    }
+}
+
 /// Plugin for scene editor functionality
 pub struct SceneEditorPlugin;
 
 impl Plugin for SceneEditorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<EditorScene>()
+            // Register marker component
             .register_type::<EditorSceneEntity>()
+            // Register core Bevy components for scene serialization
+            .register_type::<Name>()
+            .register_type::<Transform>()
+            .register_type::<GlobalTransform>()
+            .register_type::<Visibility>()
+            .register_type::<InheritedVisibility>()
+            .register_type::<ViewVisibility>()
+            // Register rendering components
+            .register_type::<Sprite>()
+            // Events
             .add_event::<TransformEditEvent>()
+            .add_event::<NameEditEvent>()
+            // Systems
             .add_systems(Startup, setup_editor_scene)
-            .add_systems(Update, handle_transform_edit_events);
+            .add_systems(Update, (
+                handle_transform_edit_events,
+                handle_name_edit_events,
+                tag_spawned_scene_entities, // Tag entities after scene loads
+            ));
     }
 }

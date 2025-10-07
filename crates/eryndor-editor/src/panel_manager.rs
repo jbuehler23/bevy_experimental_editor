@@ -41,6 +41,12 @@ impl Default for PanelManager {
     }
 }
 
+/// Resource to hold temporary name edit buffer (for inspector entity naming)
+#[derive(Resource, Default)]
+pub struct NameEditBuffer {
+    pub buffer: String,
+}
+
 /// System to render left panel with tabs
 pub fn render_left_panel(
     mut contexts: EguiContexts,
@@ -99,6 +105,8 @@ pub fn render_right_panel(
     tileset_manager: Res<TilesetManager>,
     mut tileset_zoom: ResMut<crate::tileset_panel::TilesetZoom>,
     mut transform_events: EventWriter<crate::scene_editor::TransformEditEvent>,
+    mut name_events: EventWriter<crate::scene_editor::NameEditEvent>,
+    mut name_edit_buffer: ResMut<NameEditBuffer>,
     entity_query: Query<(
         Entity,
         Option<&Name>,
@@ -155,6 +163,8 @@ pub fn render_right_panel(
                         selected_entity_data.as_ref(),
                         &component_registry.registry,
                         &mut transform_events,
+                        &mut name_events,
+                        &mut name_edit_buffer.buffer,
                     );
                 }
                 RightPanelTab::Tilesets => {
