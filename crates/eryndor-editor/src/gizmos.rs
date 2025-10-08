@@ -122,15 +122,17 @@ pub fn draw_selection_gizmos(
             // Calculate bounds based on component type
             let bounds = if let Some(sprite) = sprite {
                 // Get sprite size from custom_size or texture dimensions
-                if let Some(custom_size) = sprite.custom_size {
-                    custom_size * scale
+                let base_size = if let Some(custom_size) = sprite.custom_size {
+                    custom_size
                 } else if let Some(image) = images.get(&sprite.image) {
-                    let size = image.size().as_vec2();
-                    size * scale
+                    image.size().as_vec2()
                 } else {
                     // Default size for sprites without texture
-                    Vec2::new(64.0, 64.0) * scale
-                }
+                    Vec2::new(64.0, 64.0)
+                };
+
+                // Apply scale to base size
+                base_size * scale
             } else if let Some(_node) = node {
                 // UI Node size - use fixed size for now
                 Vec2::new(100.0, 100.0) * scale

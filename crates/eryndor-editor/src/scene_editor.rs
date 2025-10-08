@@ -264,6 +264,7 @@ pub fn handle_sprite_texture_events(
     mut events: EventReader<SpriteTextureEvent>,
     mut sprite_query: Query<&mut Sprite, With<EditorSceneEntity>>,
     mut editor_scene: ResMut<EditorScene>,
+    images: Res<Assets<Image>>,
 ) {
     for event in events.read() {
         // Update sprite's image handle and reset color to white for proper texture display
@@ -271,6 +272,16 @@ pub fn handle_sprite_texture_events(
             sprite.image = event.texture_handle.clone();
             // Set color to white so the texture displays without tinting
             sprite.color = Color::WHITE;
+
+            // Update custom_size to match texture dimensions if texture is loaded
+            if let Some(image) = images.get(&event.texture_handle) {
+                sprite.custom_size = Some(image.size().as_vec2());
+                info!("Set sprite custom_size to texture dimensions: {:?}", image.size());
+            } else {
+                // Texture not loaded yet - remove custom_size to use natural texture size when it loads
+                sprite.custom_size = None;
+            }
+
             editor_scene.mark_modified();
             info!("Assigned texture to sprite entity {:?}", event.entity);
         } else {
