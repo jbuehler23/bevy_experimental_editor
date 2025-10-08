@@ -4,7 +4,7 @@ use crate::component_registry::{ComponentCategory, ComponentRegistry, EditorComp
 use crate::icons::Icons;
 use crate::scene_editor::{EditorScene, TransformEditEvent, NameEditEvent};
 use bevy::prelude::*;
-use bevy_egui::egui;
+use bevy_egui::{egui, EguiContexts};
 
 /// Component data extracted from queries
 #[derive(Clone)]
@@ -29,6 +29,11 @@ pub fn render_inspector_panel(
     transform_events: &mut EventWriter<TransformEditEvent>,
     name_events: &mut EventWriter<NameEditEvent>,
     name_edit_buffer: &mut String,
+    project_root: Option<&std::path::PathBuf>,
+    asset_server: &AssetServer,
+    texture_events: &mut bevy::ecs::event::EventWriter<crate::scene_editor::SpriteTextureEvent>,
+    sprite_texture_id: Option<egui::TextureId>,
+    images: &Assets<Image>,
 ) {
     ui.heading("Inspector");
     ui.separator();
@@ -73,7 +78,7 @@ pub fn render_inspector_panel(
         .auto_shrink([false; 2])
         .show(ui, |ui| {
             // Show existing components
-            render_existing_components(ui, data, selected_entity, transform_events);
+            render_existing_components(ui, data, selected_entity, transform_events, project_root, asset_server, texture_events, sprite_texture_id, images);
 
             ui.separator();
 
@@ -88,6 +93,11 @@ fn render_existing_components(
     data: &EntityComponentData,
     entity: Entity,
     transform_events: &mut EventWriter<TransformEditEvent>,
+    project_root: Option<&std::path::PathBuf>,
+    asset_server: &AssetServer,
+    texture_events: &mut bevy::ecs::event::EventWriter<crate::scene_editor::SpriteTextureEvent>,
+    sprite_texture_id: Option<egui::TextureId>,
+    images: &Assets<Image>,
 ) {
     // Transform component
     if let Some(transform) = &data.transform {
@@ -106,7 +116,7 @@ fn render_existing_components(
 
     // Sprite component
     if let Some(sprite) = &data.sprite {
-        render_sprite_component(ui, sprite);
+        render_sprite_component(ui, sprite, entity, project_root, asset_server, texture_events, sprite_texture_id, images);
     }
 
     // Camera2d component
@@ -199,13 +209,98 @@ fn render_visibility_component(ui: &mut egui::Ui, visibility: &Visibility) {
 }
 
 /// Render Sprite component editor
-fn render_sprite_component(ui: &mut egui::Ui, sprite: &Sprite) {
+fn render_sprite_component(
+    ui: &mut egui::Ui,
+    sprite: &Sprite,
+    entity: Entity,
+    project_root: Option<&std::path::PathBuf>,
+    asset_server: &AssetServer,
+    texture_events: &mut bevy::ecs::event::EventWriter<crate::scene_editor::SpriteTextureEvent>,
+    texture_id: Option<egui::TextureId>,
+    images: &Assets<Image>,
+) {
     egui::CollapsingHeader::new(format!("{} Sprite", Icons::SPRITE))
         .default_open(true)
         .show(ui, |ui| {
+            ui.heading("Texture");
+
+            // Display current texture with preview
+            if !sprite.image.is_strong() {
+                ui.label("None");
+            } else {
+                // Get asset path from handle
+                if let Some(path) = asset_server.get_path(&sprite.image) {
+                    ui.label(format!("{}", path.path().display()));
+
+                    // Display texture preview if loaded and texture_id provided
+                    if let Some(texture_id) = texture_id {
+                        if let Some(image) = images.get(&sprite.image) {
+                            // Calculate preview size (max 128x128 while maintaining aspect ratio)
+                            let size = image.size();
+                            let aspect_ratio = size.x as f32 / size.y as f32;
+                            let (preview_width, preview_height) = if aspect_ratio > 1.0 {
+                                (128.0, 128.0 / aspect_ratio)
+                            } else {
+                                (128.0 * aspect_ratio, 128.0)
+                            };
+
+                            // Display preview with border
+                            ui.add_space(4.0);
+                            egui::Frame::canvas(ui.style())
+                                .stroke(egui::Stroke::new(1.0, egui::Color32::GRAY))
+                                .show(ui, |ui| {
+                                    ui.image(egui::ImageSource::Texture(egui::load::SizedTexture::new(
+                                        texture_id,
+                                        [preview_width, preview_height],
+                                    )));
+                                });
+
+                            // Display texture info
+                            ui.add_space(4.0);
+                            ui.label(format!("Size: {}x{}", size.x as u32, size.y as u32));
+                        } else {
+                            ui.label("(Loading...)");
+                        }
+                    } else {
+                        ui.label("(Texture preview unavailable)");
+                    }
+                } else {
+                    ui.label("<loaded>");
+                }
+            }
+
+            ui.add_space(4.0);
+
+            // File picker button
+            if ui.button(format!("{} Select Texture...", Icons::IMAGE)).clicked() {
+                if let Some(root) = project_root {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_directory(root)
+                        .add_filter("Images", &["png", "jpg", "jpeg", "gif", "bmp"])
+                        .pick_file()
+                    {
+                        // Load texture using absolute path since the AssetServer needs full path for user project assets
+                        let texture_path = path.to_string_lossy().to_string().replace('\\', "/");
+
+                        info!("Loading texture from absolute path: '{}'", texture_path);
+                        let texture_handle: Handle<Image> = asset_server.load(&texture_path);
+
+                        texture_events.send(crate::scene_editor::SpriteTextureEvent {
+                            entity,
+                            texture_handle,
+                        });
+
+                        info!("Assigned texture to sprite {:?}", entity);
+                    }
+                } else {
+                    ui.label("No project loaded");
+                }
+            }
+
+            ui.separator();
+
             ui.label(format!("Color: {:?}", sprite.color));
             ui.label(format!("Custom Size: {:?}", sprite.custom_size));
-            ui.label("(Editing coming soon)");
         });
 }
 

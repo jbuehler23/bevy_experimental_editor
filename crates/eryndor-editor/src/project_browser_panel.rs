@@ -33,6 +33,9 @@ pub fn project_browser_panel_ui(
     ui: &mut egui::Ui,
     browser: &mut ProjectBrowser,
     panel: &mut ProjectBrowserPanel,
+    editor_scene: &crate::scene_editor::EditorScene,
+    asset_server: &AssetServer,
+    texture_events: &mut bevy::ecs::event::EventWriter<crate::scene_editor::SpriteTextureEvent>,
 ) {
     ui.heading(format!("{} Project", Icons::FOLDER_OPEN));
     ui.separator();
@@ -94,7 +97,8 @@ pub fn project_browser_panel_ui(
         ui.label("Empty project");
     } else {
         egui::ScrollArea::vertical().show(ui, |ui| {
-            render_file_tree(ui, browser, &browser.root_entries.clone(), 0);
+            let entries_clone = browser.root_entries.clone();
+            render_file_tree(ui, browser, &entries_clone, 0, editor_scene, asset_server, texture_events);
         });
     }
 }
@@ -116,9 +120,12 @@ fn render_file_tree(
     browser: &mut ProjectBrowser,
     entries: &[FileEntry],
     depth: usize,
+    editor_scene: &crate::scene_editor::EditorScene,
+    asset_server: &AssetServer,
+    texture_events: &mut bevy::ecs::event::EventWriter<crate::scene_editor::SpriteTextureEvent>,
 ) {
     for entry in entries {
-        render_file_entry(ui, browser, entry, depth);
+        render_file_entry(ui, browser, entry, depth, editor_scene, asset_server, texture_events);
     }
 }
 
@@ -128,6 +135,9 @@ fn render_file_entry(
     browser: &mut ProjectBrowser,
     entry: &FileEntry,
     depth: usize,
+    editor_scene: &crate::scene_editor::EditorScene,
+    asset_server: &AssetServer,
+    texture_events: &mut bevy::ecs::event::EventWriter<crate::scene_editor::SpriteTextureEvent>,
 ) {
     let indent = depth as f32 * 16.0;
     let is_selected = browser
@@ -175,6 +185,27 @@ fn render_file_entry(
             info!("Selected: {:?}", entry.path);
         }
 
+        // Double-click handler for images - assign to selected sprite
+        if name_response.double_clicked() && entry.file_type == FileType::Image {
+            if let Some(selected_entity) = editor_scene.selected_entity {
+                // Load texture using absolute path since the AssetServer needs full path for user project assets
+                let texture_path = entry.path.to_string_lossy().to_string().replace('\\', "/");
+
+                info!("Loading texture from absolute path: '{}'", texture_path);
+                let texture_handle: Handle<Image> = asset_server.load(&texture_path);
+
+                // Send event to assign texture to sprite
+                texture_events.send(crate::scene_editor::SpriteTextureEvent {
+                    entity: selected_entity,
+                    texture_handle,
+                });
+
+                info!("Assigning texture '{}' to sprite {:?}", entry.name, selected_entity);
+            } else {
+                warn!("Double-clicked image but no entity selected");
+            }
+        }
+
         // Context menu
         name_response.context_menu(|ui| {
             render_context_menu(ui, browser, entry);
@@ -195,7 +226,7 @@ fn render_file_entry(
 
     // Render children if folder is expanded
     if entry.is_directory && browser.is_expanded(&entry.path) && !entry.children.is_empty() {
-        render_file_tree(ui, browser, &entry.children, depth + 1);
+        render_file_tree(ui, browser, &entry.children, depth + 1, editor_scene, asset_server, texture_events);
     }
 }
 

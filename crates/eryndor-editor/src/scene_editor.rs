@@ -194,6 +194,13 @@ pub struct NameEditEvent {
     pub new_name: String,
 }
 
+/// Event for assigning texture to sprite
+#[derive(Event, Debug, Clone)]
+pub struct SpriteTextureEvent {
+    pub entity: Entity,
+    pub texture_handle: Handle<Image>,
+}
+
 /// System to handle transform edit events
 pub fn handle_transform_edit_events(
     mut events: EventReader<TransformEditEvent>,
@@ -248,6 +255,26 @@ pub fn handle_name_edit_events(
             name.set(event.new_name.clone());
             editor_scene.mark_modified();
             info!("Renamed entity {:?} to '{}'", event.entity, event.new_name);
+        }
+    }
+}
+
+/// System to handle sprite texture assignment events
+pub fn handle_sprite_texture_events(
+    mut events: EventReader<SpriteTextureEvent>,
+    mut sprite_query: Query<&mut Sprite, With<EditorSceneEntity>>,
+    mut editor_scene: ResMut<EditorScene>,
+) {
+    for event in events.read() {
+        // Update sprite's image handle and reset color to white for proper texture display
+        if let Ok(mut sprite) = sprite_query.get_mut(event.entity) {
+            sprite.image = event.texture_handle.clone();
+            // Set color to white so the texture displays without tinting
+            sprite.color = Color::WHITE;
+            editor_scene.mark_modified();
+            info!("Assigned texture to sprite entity {:?}", event.entity);
+        } else {
+            warn!("Attempted to assign texture to non-sprite entity {:?}", event.entity);
         }
     }
 }

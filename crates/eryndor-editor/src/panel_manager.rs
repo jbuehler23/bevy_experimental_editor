@@ -108,10 +108,11 @@ pub fn render_right_panel(
     mut transform_events: EventWriter<crate::scene_editor::TransformEditEvent>,
     mut name_events: EventWriter<crate::scene_editor::NameEditEvent>,
     mut name_edit_buffer: ResMut<NameEditBuffer>,
-    mut asset_browser: ResMut<crate::asset_browser::AssetBrowser>,
-    asset_browser_panel: Res<crate::asset_browser_panel::AssetBrowserPanel>,
     mut project_browser: ResMut<crate::project_browser::ProjectBrowser>,
     mut project_browser_panel: ResMut<crate::project_browser_panel::ProjectBrowserPanel>,
+    asset_server: Res<AssetServer>,
+    mut texture_events: EventWriter<crate::scene_editor::SpriteTextureEvent>,
+    images: Res<Assets<Image>>,
     entity_query: Query<(
         Entity,
         Option<&Name>,
@@ -124,14 +125,35 @@ pub fn render_right_panel(
         Option<&Text>,
     )>,
 ) {
-    let ctx = contexts.ctx_mut();
+    // Pre-register sprite texture with egui if inspector tab is active
+    let sprite_texture_id = if panel_manager.right_tab == RightPanelTab::Inspector {
+        if let Some(selected_entity) = editor_scene.selected_entity {
+            if let Ok((_, _, _, _, sprite, _, _, _, _)) = entity_query.get(selected_entity) {
+                if let Some(sprite) = sprite {
+                    if sprite.image.is_strong() {
+                        Some(contexts.add_image(sprite.image.clone_weak()))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
 
     egui::SidePanel::right("right_panel")
         .default_width(panel_manager.right_width)
         .min_width(200.0)
         .max_width(500.0)
         .resizable(true)
-        .show(ctx, |ui| {
+        .show(contexts.ctx_mut(), |ui| {
             // Tab buttons
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut panel_manager.right_tab, RightPanelTab::Inspector, "🔍 Inspector");
@@ -171,13 +193,25 @@ pub fn render_right_panel(
                         &mut transform_events,
                         &mut name_events,
                         &mut name_edit_buffer.buffer,
+                        project_browser.project_root.as_ref(),
+                        &asset_server,
+                        &mut texture_events,
+                        sprite_texture_id,
+                        &images,
                     );
                 }
                 RightPanelTab::Tilesets => {
                     render_tilesets_tab(ui, &tileset_manager, &mut tileset_zoom);
                 }
                 RightPanelTab::Assets => {
-                    crate::project_browser_panel::project_browser_panel_ui(ui, &mut project_browser, &mut project_browser_panel);
+                    crate::project_browser_panel::project_browser_panel_ui(
+                        ui,
+                        &mut project_browser,
+                        &mut project_browser_panel,
+                        &editor_scene,
+                        &asset_server,
+                        &mut texture_events
+                    );
                 }
             }
         });

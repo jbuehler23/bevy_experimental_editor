@@ -68,7 +68,19 @@ pub fn draw_selection_gizmos(
     mut gizmos: Gizmos,
     selection: Res<Selection>,
     editor_entities: Query<(&Transform, &EditorEntity)>,
+    editor_scene: Res<EditorScene>,
+    scene_entities: Query<
+        (
+            &Transform,
+            Option<&Sprite>,
+            Option<&Node>,
+            Option<&Text>,
+        ),
+        With<EditorSceneEntity>,
+    >,
+    images: Res<Assets<Image>>,
 ) {
+    // Draw gizmos for old system entities
     for selected_entity in selection.selected.iter() {
         if let Ok((transform, editor_entity)) = editor_entities.get(*selected_entity) {
             let pos = transform.translation.xy();
@@ -97,6 +109,54 @@ pub fn draw_selection_gizmos(
             }
 
             // Draw move handles
+            draw_move_handles(&mut gizmos, pos);
+        }
+    }
+
+    // Draw gizmos for new scene editor entities
+    if let Some(selected_entity) = editor_scene.selected_entity {
+        if let Ok((transform, sprite, node, text)) = scene_entities.get(selected_entity) {
+            let pos = transform.translation.xy();
+            let scale = transform.scale.xy();
+
+            // Calculate bounds based on component type
+            let bounds = if let Some(sprite) = sprite {
+                // Get sprite size from custom_size or texture dimensions
+                if let Some(custom_size) = sprite.custom_size {
+                    custom_size * scale
+                } else if let Some(image) = images.get(&sprite.image) {
+                    let size = image.size().as_vec2();
+                    size * scale
+                } else {
+                    // Default size for sprites without texture
+                    Vec2::new(64.0, 64.0) * scale
+                }
+            } else if let Some(_node) = node {
+                // UI Node size - use fixed size for now
+                Vec2::new(100.0, 100.0) * scale
+            } else if let Some(_text) = text {
+                // Text size - use fixed size for now
+                Vec2::new(100.0, 32.0) * scale
+            } else {
+                // Default bounds for empty entities
+                Vec2::new(32.0, 32.0) * scale
+            };
+
+            // Draw bounds rectangle
+            let half_size = bounds / 2.0;
+            let corners = [
+                pos + Vec2::new(-half_size.x, -half_size.y),
+                pos + Vec2::new(half_size.x, -half_size.y),
+                pos + Vec2::new(half_size.x, half_size.y),
+                pos + Vec2::new(-half_size.x, half_size.y),
+            ];
+
+            // Draw selection rectangle
+            for i in 0..4 {
+                gizmos.line_2d(corners[i], corners[(i + 1) % 4], Color::srgb(1.0, 1.0, 0.0));
+            }
+
+            // Draw move handles at entity position
             draw_move_handles(&mut gizmos, pos);
         }
     }

@@ -135,6 +135,7 @@ fn main() {
         .add_event::<scene_tree_panel::SceneTreeCommand>()
         .add_event::<scene_editor::TransformEditEvent>()
         .add_event::<scene_editor::NameEditEvent>()
+        .add_event::<scene_editor::SpriteTextureEvent>()
         .add_event::<scene_tabs::SceneTabChanged>()
         // Systems - Split into smaller groups to avoid tuple size limit
         .add_systems(
@@ -167,6 +168,7 @@ fn main() {
                 scene_tree_panel::handle_scene_tree_commands, // Handle scene tree commands
                 scene_editor::handle_transform_edit_events, // Handle transform edit events
                 scene_editor::handle_name_edit_events, // Handle name edit events
+                scene_editor::handle_sprite_texture_events, // Handle sprite texture assignment events
             )
                 .after(handle_global_shortcuts),
         )
