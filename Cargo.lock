@@ -826,6 +826,7 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_ecs_tilemap",
+ "bevy_editor_core",
  "bevy_egui",
  "chrono",
  "crossbeam-channel",
@@ -835,6 +836,14 @@ dependencies = [
  "serde",
  "serde_json",
  "toml",
+]
+
+[[package]]
+name = "bevy_editor_core"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_egui",
 ]
 
 [[package]]

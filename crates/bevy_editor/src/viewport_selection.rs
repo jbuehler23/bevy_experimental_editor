@@ -7,7 +7,7 @@ use bevy_egui::EguiContext;
 
 use crate::scene_editor::{EditorScene, EditorSceneEntity, TransformEditEvent};
 use crate::gizmos::{GizmoMode, GizmoState};
-use crate::editor_history::EditorHistory;
+use bevy_editor_core::EditorHistory;
 use crate::editor_commands::TransformCommand;
 
 /// Which specific gizmo handle is being dragged

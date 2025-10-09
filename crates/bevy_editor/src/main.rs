@@ -9,19 +9,20 @@ use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
+// Import core editor primitives from bevy_editor_core
+use bevy_editor_core::{self as core, EditorCameraPlugin};
+
 mod asset_browser;
 mod asset_browser_panel;
 mod bevy_cli_runner;
 mod build_progress_ui;
-mod camera;
 mod cli_output_panel;
 mod collision_editor;
 mod component_registry;
 mod editor_commands;
-mod editor_history;
 mod entity_templates;
 mod formats;
-mod gizmos;
+mod gizmos;  // Keep local gizmos module for drawing logic
 mod icons;
 mod inspector_panel;
 mod layer_manager;
@@ -39,8 +40,8 @@ mod scene_loader;
 mod scene_loader_template;
 mod scene_tabs;
 mod scene_tree_panel;
-mod selection;
-mod shortcuts;
+mod selection;  // Keep local selection module for editor-specific selection logic
+mod shortcuts;  // Keep local shortcuts module for editor-specific shortcuts
 mod systems;
 mod tile_painter;
 mod tilemap_component;
@@ -113,7 +114,7 @@ fn main() {
         .init_resource::<panel_manager::NameEditBuffer>()
         .init_resource::<viewport_selection::GizmoDragState>()
         .init_resource::<gizmos::GizmoState>()
-        .init_resource::<editor_history::EditorHistory>()
+        .init_resource::<core::EditorHistory>()
         // Project resources
         .init_resource::<ProjectSelection>()
         .init_resource::<ProjectWizard>()
@@ -159,11 +160,8 @@ fn main() {
             Update,
             (handle_global_shortcuts, handle_gizmo_mode_shortcuts),
         )
-        // Camera controls
-        .add_systems(
-            Update,
-            (camera::camera_pan_system, camera::camera_zoom_system),
-        )
+        // Camera controls from bevy_editor_core
+        .add_plugins(EditorCameraPlugin)
         .add_systems(
             Update,
             (
@@ -245,14 +243,14 @@ fn main() {
 }
 
 fn setup_editor(mut commands: Commands) {
-    // Spawn camera with custom editor controls
+    // Spawn camera with custom editor controls from bevy_editor_core
     commands.spawn((
         Camera2d,
         Camera {
             clear_color: ClearColorConfig::Custom(Color::srgb(0.2, 0.2, 0.25)),
             ..default()
         },
-        camera::EditorCamera::default(),
+        core::EditorCamera::default(),
     ));
 
     info!("Bevy Experimental Editor initialized!");

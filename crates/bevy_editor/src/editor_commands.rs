@@ -1,6 +1,6 @@
 //! Concrete implementations of editor commands for undo/redo
 
-use super::editor_history::EditorCommand;
+use bevy_editor_core::EditorCommand;
 use crate::entity_templates::EntityTemplate;
 use crate::scene_editor::EditorScene;
 use bevy::prelude::*;
