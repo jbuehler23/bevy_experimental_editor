@@ -8,7 +8,6 @@
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_pancam::{PanCam, PanCamPlugin};
 
 mod asset_browser;
 mod asset_browser_panel;
@@ -95,7 +94,6 @@ fn main() {
                 enable_multipass_for_primary_context: false,
             },
             WorldInspectorPlugin::default(),
-            PanCamPlugin,
             bevy_ecs_tilemap::TilemapPlugin,
         ))
         // Editor resources
@@ -158,6 +156,8 @@ fn main() {
         )
         // Keyboard shortcuts MUST run before UI to capture shortcuts
         .add_systems(Update, (handle_global_shortcuts, handle_gizmo_mode_shortcuts))
+        // Camera controls
+        .add_systems(Update, (camera::camera_pan_system, camera::camera_zoom_system))
         .add_systems(
             Update,
             (
@@ -187,9 +187,6 @@ fn main() {
                 sync_tilemap_on_scene_switch, // Sync tilemap when tab changes
                 scene_tabs::sync_editor_scene_on_tab_change, // Sync EditorScene when tab changes
                 scene_tabs::mark_loaded_scene_entities, // Mark loaded scene entities with EditorSceneEntity
-                disable_pancam_over_ui
-                    .after(panel_manager::render_right_panel)
-                    .after(ui_system),
                 handle_tile_selection_events,
                 handle_entity_placement,
                 handle_save_load,
@@ -241,47 +238,17 @@ fn main() {
 }
 
 fn setup_editor(mut commands: Commands) {
-    // Spawn camera with pan/zoom controls
+    // Spawn camera with custom editor controls
     commands.spawn((
         Camera2d,
         Camera {
             clear_color: ClearColorConfig::Custom(Color::srgb(0.2, 0.2, 0.25)),
             ..default()
         },
-        PanCam {
-            grab_buttons: vec![MouseButton::Middle, MouseButton::Right],
-            enabled: true,
-            zoom_to_cursor: false, // Disable scroll zoom to avoid conflicts with UI
-            min_scale: 0.1,
-            max_scale: 5.0,
-            ..default()
-        },
+        camera::EditorCamera::default(),
     ));
 
-    info!("Eryndor Level Editor initialized!");
-}
-
-/// Disable PanCam when mouse is over egui UI
-fn disable_pancam_over_ui(
-    mut contexts: bevy_egui::EguiContexts,
-    mut pancam_query: Query<&mut PanCam>,
-) {
-    let ctx = contexts.ctx_mut();
-    let is_over_ui = ctx.is_pointer_over_area();
-
-    for mut pancam in &mut pancam_query {
-        let prev_enabled = pancam.enabled;
-        pancam.enabled = !is_over_ui;
-
-        // Debug: Log when state changes
-        if prev_enabled != pancam.enabled {
-            if pancam.enabled {
-                debug!("PanCam enabled (mouse left UI)");
-            } else {
-                debug!("PanCam disabled (mouse over UI)");
-            }
-        }
-    }
+    info!("Bevy Experimental Editor initialized!");
 }
 
 #[derive(Resource)]

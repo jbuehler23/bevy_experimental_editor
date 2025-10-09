@@ -827,7 +827,6 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_ecs_tilemap",
  "bevy_egui",
- "bevy_pancam",
  "chrono",
  "crossbeam-channel",
  "dirs",
@@ -1102,15 +1101,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bb60c753b968a2de0fd279b76a3d19517695e771edb4c23575c7f92156315de"
 dependencies = [
  "glam",
-]
-
-[[package]]
-name = "bevy_pancam"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "250c76be5c91a10fdcb2dc42fa7924a788c7a736be6440e6f9b235eb7e89928b"
-dependencies = [
- "bevy",
 ]
 
 [[package]]

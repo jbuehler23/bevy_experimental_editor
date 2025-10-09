@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
-use crate::{EditorState, Selection, EditorEntity, EditorEntityType, EditorTool};
-use crate::tile_painter::{TilePainter, PaintMode};
 use crate::scene_editor::{EditorScene, EditorSceneEntity};
+use crate::tile_painter::{PaintMode, TilePainter};
+use crate::{EditorEntity, EditorEntityType, EditorState, EditorTool, Selection};
 
 /// Gizmo manipulation mode
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -25,8 +25,8 @@ impl GizmoMode {
 
     pub fn icon(&self) -> &str {
         match self {
-            GizmoMode::Move => "↔",  // Arrows
-            GizmoMode::Rotate => "↻",  // Rotation arrow
+            GizmoMode::Move => "↔",   // Arrows
+            GizmoMode::Rotate => "↻", // Rotation arrow
             GizmoMode::Scale => "⤢",  // Diagonal arrows
         }
     }
@@ -127,12 +127,7 @@ pub fn draw_selection_gizmos(
     editor_entities: Query<(&Transform, &EditorEntity)>,
     editor_scene: Res<EditorScene>,
     scene_entities: Query<
-        (
-            &Transform,
-            Option<&Sprite>,
-            Option<&Node>,
-            Option<&Text>,
-        ),
+        (&Transform, Option<&Sprite>, Option<&Node>, Option<&Text>),
         With<EditorSceneEntity>,
     >,
     images: Res<Assets<Image>>,
@@ -157,7 +152,11 @@ pub fn draw_selection_gizmos(
                         pos + Vec2::new(-half_size.x, half_size.y),
                     ];
                     for i in 0..4 {
-                        gizmos.line_2d(corners[i], corners[(i + 1) % 4], Color::srgb(1.0, 1.0, 0.0));
+                        gizmos.line_2d(
+                            corners[i],
+                            corners[(i + 1) % 4],
+                            Color::srgb(1.0, 1.0, 0.0),
+                        );
                     }
                 }
                 _ => {
@@ -268,10 +267,10 @@ fn draw_rotation_handles(gizmos: &mut Gizmos, position: Vec2, bounds: Vec2) {
 
     // Draw rotation handles at cardinal directions
     let handle_positions = [
-        position + Vec2::new(radius, 0.0),           // Right
-        position + Vec2::new(0.0, radius),           // Top
-        position + Vec2::new(-radius, 0.0),          // Left
-        position + Vec2::new(0.0, -radius),          // Bottom
+        position + Vec2::new(radius, 0.0),  // Right
+        position + Vec2::new(0.0, radius),  // Top
+        position + Vec2::new(-radius, 0.0), // Left
+        position + Vec2::new(0.0, -radius), // Bottom
     ];
 
     for handle_pos in handle_positions {
@@ -316,10 +315,10 @@ fn draw_scale_handles(gizmos: &mut Gizmos, position: Vec2, bounds: Vec2) {
 
     // Edge handles (cyan - for axis-aligned scaling)
     let edges = [
-        position + Vec2::new(0.0, -half_size.y),     // Bottom
-        position + Vec2::new(half_size.x, 0.0),      // Right
-        position + Vec2::new(0.0, half_size.y),      // Top
-        position + Vec2::new(-half_size.x, 0.0),     // Left
+        position + Vec2::new(0.0, -half_size.y), // Bottom
+        position + Vec2::new(half_size.x, 0.0),  // Right
+        position + Vec2::new(0.0, half_size.y),  // Top
+        position + Vec2::new(-half_size.x, 0.0), // Left
     ];
 
     for edge in edges {
@@ -348,7 +347,9 @@ pub fn draw_tile_tool_preview(
     // Only show when NOT actively dragging (Rectangle/Line tools use drag_start)
     if tile_painter.mode == PaintMode::Single
         && tileset_manager.selected_tiles.len() > 1
-        && tile_painter.drag_start.is_none() {  // Prevent conflict with drag tools
+        && tile_painter.drag_start.is_none()
+    {
+        // Prevent conflict with drag tools
 
         if let Some((cursor_x, cursor_y)) = tile_painter.current_pos {
             if let Some((stamp_width, stamp_height)) = tileset_manager.get_selection_dimensions() {
@@ -382,17 +383,11 @@ pub fn draw_tile_tool_preview(
         PaintMode::Rectangle | PaintMode::Line => {
             // Show preview when dragging
             if let (Some((start_x, start_y)), Some((end_x, end_y))) =
-                (tile_painter.drag_start, tile_painter.current_pos) {
-
+                (tile_painter.drag_start, tile_painter.current_pos)
+            {
                 // Convert tile coords to world coords
-                let start_world = Vec2::new(
-                    start_x as f32 * grid_size,
-                    start_y as f32 * grid_size,
-                );
-                let end_world = Vec2::new(
-                    end_x as f32 * grid_size,
-                    end_y as f32 * grid_size,
-                );
+                let start_world = Vec2::new(start_x as f32 * grid_size, start_y as f32 * grid_size);
+                let end_world = Vec2::new(end_x as f32 * grid_size, end_y as f32 * grid_size);
 
                 let preview_color = Color::srgba(0.0, 1.0, 1.0, 0.5); // Cyan semi-transparent
 
@@ -488,7 +483,10 @@ fn calculate_line_tiles(start_x: u32, start_y: u32, end_x: u32, end_y: u32) -> V
 pub fn draw_scene_entity_gizmos(
     mut gizmos: Gizmos,
     editor_scene: Res<EditorScene>,
-    scene_entities: Query<(&GlobalTransform, Option<&Sprite>, Option<&Name>), With<EditorSceneEntity>>,
+    scene_entities: Query<
+        (&GlobalTransform, Option<&Sprite>, Option<&Name>),
+        With<EditorSceneEntity>,
+    >,
 ) {
     // Draw highlight for selected entity
     if let Some(selected_entity) = editor_scene.selected_entity {
@@ -554,7 +552,11 @@ pub fn draw_scene_entity_gizmos(
             ];
 
             for i in 0..4 {
-                gizmos.line_2d(corners[i], corners[(i + 1) % 4], Color::srgba(0.7, 0.7, 0.7, 0.3));
+                gizmos.line_2d(
+                    corners[i],
+                    corners[(i + 1) % 4],
+                    Color::srgba(0.7, 0.7, 0.7, 0.3),
+                );
             }
         }
     }
@@ -594,20 +596,18 @@ fn draw_scene_move_handles(gizmos: &mut Gizmos, position: Vec2) {
 }
 
 /// Draw gizmo mode indicator overlay in viewport
-pub fn draw_gizmo_mode_indicator(
-    mut contexts: EguiContexts,
-    gizmo_state: Res<GizmoState>,
-) {
+pub fn draw_gizmo_mode_indicator(mut contexts: EguiContexts, gizmo_state: Res<GizmoState>) {
     let ctx = contexts.ctx_mut();
 
-    // Draw in top-right of viewport
+    // Draw in top-left of viewport, accounting for left panel width
+    // Position: after left panel (~250px) + some margin, below toolbar (~45px)
     egui::Area::new(egui::Id::new("gizmo_mode_indicator"))
-        .anchor(egui::Align2::RIGHT_TOP, [-10.0, 50.0])  // Top-right, below toolbar
+        .anchor(egui::Align2::LEFT_TOP, [260.0, 45.0])
         .show(ctx, |ui| {
             egui::Frame::none()
                 .fill(egui::Color32::from_rgba_unmultiplied(30, 30, 30, 180))
                 .rounding(4.0)
-                .inner_margin(egui::Margin::symmetric(8.0, 6.0))
+                .inner_margin(egui::Margin::symmetric(8, 6))
                 .show(ui, |ui| {
                     ui.vertical(|ui| {
                         ui.spacing_mut().item_spacing.y = 3.0;
@@ -617,13 +617,13 @@ pub fn draw_gizmo_mode_indicator(
                             ui.label(
                                 egui::RichText::new(gizmo_state.mode.icon())
                                     .size(14.0)
-                                    .color(egui::Color32::from_rgb(100, 180, 255))
+                                    .color(egui::Color32::from_rgb(100, 180, 255)),
                             );
                             ui.label(
                                 egui::RichText::new(gizmo_state.mode.display_name())
                                     .size(11.0)
                                     .strong()
-                                    .color(egui::Color32::from_rgb(220, 220, 220))
+                                    .color(egui::Color32::from_rgb(220, 220, 220)),
                             );
                         });
 
@@ -636,12 +636,12 @@ pub fn draw_gizmo_mode_indicator(
                                     ui.label(
                                         egui::RichText::new(mode.icon())
                                             .size(10.0)
-                                            .color(egui::Color32::from_rgb(120, 120, 120))
+                                            .color(egui::Color32::from_rgb(120, 120, 120)),
                                     );
                                     ui.label(
                                         egui::RichText::new(mode.display_name())
                                             .size(9.0)
-                                            .color(egui::Color32::from_rgb(150, 150, 150))
+                                            .color(egui::Color32::from_rgb(150, 150, 150)),
                                     );
                                 });
                             }
