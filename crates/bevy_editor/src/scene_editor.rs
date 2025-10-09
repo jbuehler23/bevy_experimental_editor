@@ -2,7 +2,7 @@
 //! Uses Bevy's DynamicScene for serialization/deserialization
 
 use bevy::prelude::*;
-use bevy::scene::{DynamicScene, DynamicSceneBuilder, DynamicSceneRoot, SceneSpawner};
+use bevy::scene::{DynamicScene, DynamicSceneBuilder, DynamicSceneRoot};
 
 /// Marker component for entities that are part of the edited scene
 /// (not editor UI elements)
@@ -12,6 +12,7 @@ pub struct EditorSceneEntity;
 
 /// Resource managing the currently edited scene
 #[derive(Resource)]
+#[derive(Default)]
 pub struct EditorScene {
     /// Root entity that all scene entities are parented to
     pub root_entity: Option<Entity>,
@@ -21,15 +22,6 @@ pub struct EditorScene {
     pub is_modified: bool,
 }
 
-impl Default for EditorScene {
-    fn default() -> Self {
-        Self {
-            root_entity: None,
-            selected_entity: None,
-            is_modified: false,
-        }
-    }
-}
 
 impl EditorScene {
     /// Create a new empty scene with a root entity

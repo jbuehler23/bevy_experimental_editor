@@ -1,3 +1,10 @@
+//! Bevy Experimental Editor
+//!
+//! An experimental game editor built with Bevy Engine.
+
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -48,7 +55,6 @@ mod workspace;
 
 use bevy_cli_runner::*;
 use build_progress_ui::*;
-use camera::*;
 use cli_output_panel::*;
 use collision_editor::*;
 use gizmos::*;
@@ -57,7 +63,6 @@ use layer_manager::*;
 use map_canvas::*;
 use project_manager::*;
 use project_wizard::*;
-use rendering::*;
 use scene_loader::*;
 use scene_tabs::*;
 use selection::*;
@@ -67,7 +72,6 @@ use tile_painter::*;
 use tileset_manager::*;
 // use tileset_panel::*;  // Commented out - using panel_manager instead
 use tileset_panel::{SelectTileEvent, SelectTilesetEvent, handle_tile_selection_events};
-use toolbar::*;
 use ui::*;
 use workspace::*;
 
@@ -239,7 +243,7 @@ fn main() {
 fn setup_editor(mut commands: Commands) {
     // Spawn camera with pan/zoom controls
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Camera {
             clear_color: ClearColorConfig::Custom(Color::srgb(0.2, 0.2, 0.25)),
             ..default()
@@ -311,7 +315,7 @@ pub enum EditorTool {
 
 #[derive(Resource)]
 pub struct CurrentLevel {
-    pub level_data: eryndor_common::LevelData,
+    pub level_data: crate::formats::LevelData,
     pub file_path: Option<String>,
     pub is_modified: bool,
 }
@@ -319,7 +323,7 @@ pub struct CurrentLevel {
 impl Default for CurrentLevel {
     fn default() -> Self {
         Self {
-            level_data: eryndor_common::LevelData::new(
+            level_data: crate::formats::LevelData::new(
                 "Untitled Level".to_string(),
                 2000.0,
                 1000.0,
@@ -332,5 +336,5 @@ impl Default for CurrentLevel {
 
 #[derive(Resource, Default)]
 pub struct EntityPalette {
-    pub selected_entity: Option<eryndor_common::EntityType>,
+    pub selected_entity: Option<crate::formats::EntityType>,
 }

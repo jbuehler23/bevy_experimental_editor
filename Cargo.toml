@@ -26,7 +26,6 @@ bevy = { version = "0.16.0", default-features = false, features = [
   "bevy_audio",
   "png",
 ] }
-spacetimedb-sdk = { version = "1.3.0" }
 
 [workspace.metadata.bevy_cli.release]
 # Disable dev features for release builds.

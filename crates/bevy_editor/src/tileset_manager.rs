@@ -268,7 +268,7 @@ pub fn load_tileset(
 /// System to handle tileset loading requests
 /// This system waits for the image to load, then calculates the actual grid dimensions
 pub fn handle_tileset_load_requests(
-    mut commands: Commands,
+    commands: Commands,
     asset_server: Res<AssetServer>,
     mut tileset_manager: ResMut<TilesetManager>,
     mut images: ResMut<Assets<Image>>,
@@ -304,7 +304,7 @@ pub fn handle_tileset_load_requests(
             // Configure nearest-neighbor sampling for pixel-perfect rendering
             image.sampler = ImageSampler::nearest();
 
-            let mut data = TilesetData {
+            let data = TilesetData {
                 id: 0,
                 identifier: event.identifier.clone(),
                 texture_path: event.path.clone(),

@@ -124,7 +124,7 @@ pub fn handle_entity_deletion(
     selection: Res<Selection>,
     editor_entities: Query<&EditorEntity>,
     mut open_scenes: ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
-    mut entity_map: ResMut<EditorEntityMap>,
+    entity_map: ResMut<EditorEntityMap>,
 ) {
     if !keyboard.just_pressed(KeyCode::Delete) && !keyboard.just_pressed(KeyCode::Backspace) {
         return;

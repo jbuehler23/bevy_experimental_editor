@@ -83,7 +83,7 @@ pub fn render_left_panel(
                         .map(|(entity, name, children)| EntityNodeData {
                             entity,
                             name: name.map(|n| n.to_string()).unwrap_or_else(|| "Unnamed".to_string()),
-                            has_children: children.map_or(false, |c| !c.is_empty()),
+                            has_children: children.is_some_and(|c| !c.is_empty()),
                             children: children.map_or_else(Vec::new, |c| c.iter().collect()),
                         })
                         .collect();
@@ -227,7 +227,7 @@ fn render_layers_tab(ui: &mut egui::Ui, layer_manager: &mut LayerManager) {
     ui.horizontal(|ui| {
         if ui.button(format!("{} Add Layer", Icons::NEW)).clicked() {
             let new_layer = crate::layer_manager::create_default_layer(
-                eryndor_common::LayerType::Tiles,
+                crate::formats::LayerType::Tiles,
                 &format!("Layer {}", layer_manager.layers.len()),
                 layer_manager.layers.len() as i32,
                 None,

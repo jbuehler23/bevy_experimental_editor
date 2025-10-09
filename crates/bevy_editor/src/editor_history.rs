@@ -41,6 +41,7 @@ struct CommandWrapper {
 
 /// Resource that manages undo/redo history
 #[derive(Resource)]
+#[derive(Default)]
 pub struct EditorHistory {
     /// Stack of commands that have been executed (can be undone)
     undo_stack: VecDeque<CommandWrapper>,
@@ -55,16 +56,6 @@ pub struct EditorHistory {
     total_commands: usize,
 }
 
-impl Default for EditorHistory {
-    fn default() -> Self {
-        Self {
-            undo_stack: VecDeque::new(),
-            redo_stack: VecDeque::new(),
-            is_executing: false,
-            total_commands: 0,
-        }
-    }
-}
 
 impl EditorHistory {
     /// Execute a new command and add it to the history

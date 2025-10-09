@@ -1,13 +1,8 @@
-#[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "server")]
-use spacetimedb::SpacetimeType;
-
-/// 2D Vector type that can be used both in Bevy and SpacetimeDB
+/// 2D Vector type for use in the editor
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "server", derive(SpacetimeType))]
 pub struct Vector2 {
     pub x: f32,
     pub y: f32,
@@ -45,28 +40,24 @@ impl Vector2 {
     }
 }
 
-#[cfg(feature = "bevy")]
 impl From<Vec2> for Vector2 {
     fn from(v: Vec2) -> Self {
         Self { x: v.x, y: v.y }
     }
 }
 
-#[cfg(feature = "bevy")]
 impl From<Vector2> for Vec2 {
     fn from(v: Vector2) -> Self {
         Vec2::new(v.x, v.y)
     }
 }
 
-#[cfg(feature = "bevy")]
 impl From<Vec3> for Vector2 {
     fn from(v: Vec3) -> Self {
         Self { x: v.x, y: v.y }
     }
 }
 
-#[cfg(feature = "bevy")]
 impl From<Vector2> for Vec3 {
     fn from(v: Vector2) -> Self {
         Vec3::new(v.x, v.y, 0.0)

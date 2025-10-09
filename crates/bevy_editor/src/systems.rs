@@ -3,7 +3,7 @@ use bevy::scene::{DynamicScene, DynamicSceneRoot};
 use bevy::sprite::ColorMaterial;
 use crate::formats::*;
 
-use crate::{CurrentLevel, EditorState, EditorTool, EntityPalette, EditorEntityMap};
+use crate::{EditorState, EditorTool, EntityPalette, EditorEntityMap};
 use crate::rendering::{spawn_entity_visual, spawn_platform_visual};
 
 /// Resource to track pending tilemap restoration
@@ -215,7 +215,7 @@ fn save_as_scene_dialog_world(world: &mut World) {
 
     if let Some(path) = FileDialog::new()
         .add_filter("Scene", &["scn.ron"])
-        .set_file_name(&format!("{}.scn.ron", scene_name))
+        .set_file_name(format!("{}.scn.ron", scene_name))
         .save_file()
     {
         let path_str = path.to_string_lossy().to_string();
@@ -294,7 +294,7 @@ fn open_scene_dialog_world(world: &mut World) {
         let new_scene = crate::scene_tabs::OpenScene {
             name: scene_name.clone(),
             file_path: Some(path_str.clone()),
-            level_data: eryndor_common::LevelData::new(scene_name, 2000.0, 1000.0), // Deprecated, for compat
+            level_data: crate::formats::LevelData::new(scene_name, 2000.0, 1000.0), // Deprecated, for compat
             is_modified: false,
         };
         open_scenes.add_scene(new_scene);
@@ -383,7 +383,7 @@ fn save_level_with_tilemap(
     scene.level_data.tilemap = Some(tilemap_data);
 
     // Create BevyScene and save to .bscene file
-    let bevy_scene = eryndor_common::BevyScene::new(scene.level_data.clone());
+    let bevy_scene = crate::formats::BevyScene::new(scene.level_data.clone());
     if let Err(e) = bevy_scene.save_to_file(path) {
         error!("Failed to save scene: {}", e);
     } else {
@@ -430,9 +430,9 @@ fn save_as_dialog_with_tilemap(
 
 fn open_dialog(
     open_scenes: &mut ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
-    mut pending_restore: &mut ResMut<PendingTilemapRestore>,
-    mut tileset_manager: &mut ResMut<crate::tileset_manager::TilesetManager>,
-    mut commands: &mut Commands,
+    pending_restore: &mut ResMut<PendingTilemapRestore>,
+    tileset_manager: &mut ResMut<crate::tileset_manager::TilesetManager>,
+    commands: &mut Commands,
     existing_canvas: &Query<Entity, With<crate::map_canvas::MapCanvas>>,
 ) {
     // Check if active scene has unsaved changes
@@ -451,7 +451,7 @@ fn open_dialog(
     {
         let path_str = path.to_string_lossy().to_string();
         // Load .bscene file and extract level data
-        match eryndor_common::BevyScene::load_from_file(&path_str) {
+        match crate::formats::BevyScene::load_from_file(&path_str) {
             Ok(bevy_scene) => {
                 // Clear existing tilemap
                 for entity in existing_canvas.iter() {
@@ -735,7 +735,7 @@ fn capture_tilemap_state(
     editor_state: &EditorState,
     map_dimensions: &crate::map_canvas::MapDimensions,
     tileset_manager: &crate::tileset_manager::TilesetManager,
-) -> eryndor_common::LevelTilemapData {
+) -> crate::formats::LevelTilemapData {
     use crate::formats::{LevelTilemapData, LevelLayerData, LevelTileInstance, LevelTilesetData};
     use std::collections::HashSet;
 

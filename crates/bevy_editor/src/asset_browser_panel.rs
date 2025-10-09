@@ -50,8 +50,7 @@ pub fn asset_browser_panel_ui(
     } else {
         // Collect texture info to avoid borrow checker issues with closures
         let textures: Vec<_> = asset_browser.get_sorted_textures()
-            .into_iter()
-            .map(|t| t.clone())
+            .into_iter().cloned()
             .collect();
 
         egui::ScrollArea::vertical().show(ui, |ui| {
@@ -84,7 +83,7 @@ fn render_texture_grid(
                     .unwrap_or(false);
 
                 // Render texture item
-                render_texture_item(ui, asset_browser, &texture_info, thumbnail_size, is_selected);
+                render_texture_item(ui, asset_browser, texture_info, thumbnail_size, is_selected);
 
                 // New row after each set of columns
                 if (idx + 1) % columns == 0 {

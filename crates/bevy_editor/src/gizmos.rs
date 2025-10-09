@@ -600,26 +600,52 @@ pub fn draw_gizmo_mode_indicator(
 ) {
     let ctx = contexts.ctx_mut();
 
-    // Draw in top-left of viewport (not covered by panels)
+    // Draw in top-right of viewport
     egui::Area::new(egui::Id::new("gizmo_mode_indicator"))
-        .anchor(egui::Align2::LEFT_TOP, [270.0, 10.0])  // Offset from left panel
+        .anchor(egui::Align2::RIGHT_TOP, [-10.0, 50.0])  // Top-right, below toolbar
         .show(ctx, |ui| {
             egui::Frame::none()
-                .fill(egui::Color32::from_rgba_unmultiplied(40, 40, 40, 200))
+                .fill(egui::Color32::from_rgba_unmultiplied(30, 30, 30, 180))
                 .rounding(4.0)
-                .inner_margin(8.0)
+                .inner_margin(egui::Margin::symmetric(8.0, 6.0))
                 .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new(gizmo_state.mode.icon())
-                                .size(18.0)
-                                .color(egui::Color32::from_rgb(180, 200, 255))
-                        );
-                        ui.label(
-                            egui::RichText::new(gizmo_state.mode.display_name())
-                                .size(13.0)
-                                .color(egui::Color32::from_rgb(220, 220, 220))
-                        );
+                    ui.vertical(|ui| {
+                        ui.spacing_mut().item_spacing.y = 3.0;
+
+                        // Current mode - highlighted
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                egui::RichText::new(gizmo_state.mode.icon())
+                                    .size(14.0)
+                                    .color(egui::Color32::from_rgb(100, 180, 255))
+                            );
+                            ui.label(
+                                egui::RichText::new(gizmo_state.mode.display_name())
+                                    .size(11.0)
+                                    .strong()
+                                    .color(egui::Color32::from_rgb(220, 220, 220))
+                            );
+                        });
+
+                        // Show other mode options in smaller, dimmed text
+                        ui.add_space(2.0);
+
+                        for mode in [GizmoMode::Move, GizmoMode::Rotate, GizmoMode::Scale] {
+                            if mode != gizmo_state.mode {
+                                ui.horizontal(|ui| {
+                                    ui.label(
+                                        egui::RichText::new(mode.icon())
+                                            .size(10.0)
+                                            .color(egui::Color32::from_rgb(120, 120, 120))
+                                    );
+                                    ui.label(
+                                        egui::RichText::new(mode.display_name())
+                                            .size(9.0)
+                                            .color(egui::Color32::from_rgb(150, 150, 150))
+                                    );
+                                });
+                            }
+                        }
                     });
                 });
         });

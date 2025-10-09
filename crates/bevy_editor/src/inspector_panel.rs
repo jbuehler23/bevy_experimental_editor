@@ -1,10 +1,10 @@
 //! Inspector panel for viewing and editing entity components
 
-use crate::component_registry::{ComponentCategory, ComponentRegistry, EditorComponentRegistry};
+use crate::component_registry::ComponentRegistry;
 use crate::icons::Icons;
 use crate::scene_editor::{EditorScene, TransformEditEvent, NameEditEvent};
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::egui;
 
 /// Component data extracted from queries
 #[derive(Clone)]
@@ -257,7 +257,7 @@ fn render_sprite_component(
 
                             // Display texture info
                             ui.add_space(4.0);
-                            ui.label(format!("Size: {}x{}", size.x as u32, size.y as u32));
+                            ui.label(format!("Size: {}x{}", { size.x }, { size.y }));
                         } else {
                             ui.label("(Loading...)");
                         }

@@ -33,6 +33,7 @@ crossbeam-channel = "0.5"
 
 # System paths
 dirs = "5.0"
+chrono = "0.4.42"
 
 [lints]
 workspace = true

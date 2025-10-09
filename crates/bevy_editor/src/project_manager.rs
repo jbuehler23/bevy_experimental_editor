@@ -32,12 +32,12 @@ impl CurrentProject {
         // Auto-create default scene (main.bscene)
         let default_scene_path = metadata.levels_path.join("main.bscene");
         if !default_scene_path.exists() {
-            let default_level_data = eryndor_common::LevelData::new(
+            let default_level_data = crate::formats::LevelData::new(
                 format!("{} - Main Scene", name),
                 2000.0, // default width
                 1000.0, // default height
             );
-            let scene = eryndor_common::BevyScene::new(default_level_data);
+            let scene = crate::formats::BevyScene::new(default_level_data);
             scene.save_to_file(&default_scene_path)?;
             info!("Created default scene: {:?}", default_scene_path);
         }

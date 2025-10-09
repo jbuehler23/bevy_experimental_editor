@@ -70,7 +70,7 @@ impl EditorCommand for CreateEntityCommand {
             }
 
             // Despawn the entity
-            if let Ok(mut entity_commands) = world.get_entity_mut(entity) {
+            if let Ok(entity_commands) = world.get_entity_mut(entity) {
                 entity_commands.despawn();
                 info!("Undid entity creation - despawned {:?}", entity);
             }
@@ -151,7 +151,7 @@ impl EditorCommand for DeleteEntityCommand {
         }
 
         // Despawn the entity
-        if let Ok(mut entity_commands) = world.get_entity_mut(self.entity) {
+        if let Ok(entity_commands) = world.get_entity_mut(self.entity) {
             entity_commands.despawn();
             info!("Deleted entity {:?}", self.entity);
         }

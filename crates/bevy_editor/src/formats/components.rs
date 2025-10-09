@@ -21,7 +21,7 @@ pub struct Npc {
     pub name: String,
     pub health: i32,
     pub max_health: i32,
-    pub patrol_points: Vec<crate::math::Vector2>,
+    pub patrol_points: Vec<super::math::Vector2>,
     pub current_patrol_index: usize,
 }
 

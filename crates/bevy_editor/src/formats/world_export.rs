@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::{TilesetData, LayerData, EntityDefinitionData, EntityInstanceData, EnumDefinitionData};
+use super::{TilesetData, LayerData, EntityDefinitionData, EntityInstanceData, EnumDefinitionData};
 
 /// Complete world export format
 /// This is the primary format for editor exports and imports
@@ -117,7 +117,7 @@ impl LayerExportData {
             opacity: layer.metadata.opacity,
             parallax_x: layer.metadata.parallax_x,
             parallax_y: layer.metadata.parallax_y,
-            tiles: layer.tiles.iter().map(|t| TileExportData::from_tile_data(t)).collect(),
+            tiles: layer.tiles.iter().map(TileExportData::from_tile_data).collect(),
         }
     }
 }
@@ -133,7 +133,7 @@ pub struct TileExportData {
 }
 
 impl TileExportData {
-    pub fn from_tile_data(tile: &crate::tilemap::TileData) -> Self {
+    pub fn from_tile_data(tile: &super::tilemap::TileData) -> Self {
         Self {
             x: tile.x,
             y: tile.y,

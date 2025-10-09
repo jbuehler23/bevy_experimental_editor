@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use bevy::prelude::*;
 use crate::formats::ProjectConfig;
 
@@ -100,7 +100,7 @@ fn generate_from_bevy_cli(
     // The bevy_new_2d template uses cargo-generate which respects the
     // CARGO_GENERATE_VALUE_* environment variables to skip interactive prompts
     let status = Command::new("bevy")
-        .args(&["new", project_name, "--template", "2d"])
+        .args(["new", project_name, "--template", "2d"])
         .env("CARGO_GENERATE_VALUE_ITCH_USERNAME", "")  // Skip itch.io username prompt
         .current_dir(parent_dir)
         .status()

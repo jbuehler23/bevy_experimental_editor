@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
-use crate::formats::*;
 
-use crate::{CurrentLevel, EditorState, EditorTool, EntityPalette, CollisionEditor};
+use crate::{CurrentLevel, EditorState, EntityPalette, CollisionEditor};
 use crate::tile_painter::TilePainter;
 use crate::bevy_cli_runner::BevyCLIRunner;
 use crate::cli_output_panel::{CLIOutputPanel, render_cli_output_content, should_show_cli_output};
@@ -13,8 +12,8 @@ use crate::scene_tabs::{OpenScenes, render_scene_tabs_content};
 pub fn ui_system(
     mut contexts: EguiContexts,
     mut editor_state: ResMut<EditorState>,
-    mut current_level: ResMut<CurrentLevel>,
-    mut entity_palette: ResMut<EntityPalette>,
+    current_level: ResMut<CurrentLevel>,
+    entity_palette: ResMut<EntityPalette>,
     mut collision_editor: ResMut<CollisionEditor>,
     workspace: Option<Res<crate::workspace::EditorWorkspace>>,
     mut project_selection: Option<ResMut<crate::project_manager::ProjectSelection>>,

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::entities::EntitySpawnConfig;
-use crate::math::Vector2;
+use super::entities::EntitySpawnConfig;
+use super::math::Vector2;
 
 /// Level metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]

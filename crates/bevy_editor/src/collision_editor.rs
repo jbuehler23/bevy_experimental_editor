@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
-use crate::formats::{CollisionShape, TileCollisionData, Vector2};
+use crate::formats::{CollisionShape, Vector2};
 
 use crate::tileset_manager::TilesetManager;
 

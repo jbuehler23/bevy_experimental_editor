@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::components::*;
-use crate::math::Vector2;
+use super::components::*;
+use super::math::Vector2;
 
 /// Entity type identifier for spawning
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

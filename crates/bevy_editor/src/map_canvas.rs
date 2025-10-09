@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use crate::tileset_manager::TilesetManager;
 use crate::layer_manager::LayerManager;
-use crate::formats::LayerType;
 
 /// Component to mark the tilemap entity for the map canvas
 #[derive(Component)]

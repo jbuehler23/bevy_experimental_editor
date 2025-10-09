@@ -153,10 +153,8 @@ impl BevyCLIRunner {
         let sender = self.output_sender.clone();
         thread::spawn(move || {
             let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    let _ = sender.send(CLIOutput::Stdout(line));
-                }
+            for line in reader.lines().flatten() {
+                let _ = sender.send(CLIOutput::Stdout(line));
             }
         });
 
@@ -165,10 +163,8 @@ impl BevyCLIRunner {
         let sender = self.output_sender.clone();
         thread::spawn(move || {
             let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    let _ = sender.send(CLIOutput::Stderr(line));
-                }
+            for line in reader.lines().flatten() {
+                let _ = sender.send(CLIOutput::Stderr(line));
             }
         });
 

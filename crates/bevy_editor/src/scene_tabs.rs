@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::egui;
 use crate::formats::{LevelData, BevyScene};
 use std::path::PathBuf;
 use crate::icons::Icons;
@@ -274,7 +274,7 @@ pub fn mark_loaded_scene_entities(
 
                         // Look for entity named "Scene Root" with children
                         if let Some(entity_name) = name {
-                            if entity_name.as_str() == "Scene Root" && children.map_or(false, |c| !c.is_empty()) {
+                            if entity_name.as_str() == "Scene Root" && children.is_some_and(|c| !c.is_empty()) {
                                 actual_root = Some(entity);
                                 info!("Found actual scene root: {:?}", entity);
                             }

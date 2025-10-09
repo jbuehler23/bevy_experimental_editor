@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use crate::level_format::LevelData;
+use super::level_format::LevelData;
 
 /// Bevy Scene Format (.bscene) - JSON-based scene storage
 /// This format is used for authoring and version control.

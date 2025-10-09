@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::math::Vector2;
+use super::math::Vector2;
 
 /// Collision shape types - Tiled-style per-tile collision shapes
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

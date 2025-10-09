@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::formats::BevyScene;
-use crate::{CurrentLevel, project_manager::CurrentProject};
+use crate::project_manager::CurrentProject;
 
 /// Event to trigger scene loading
 #[derive(Event)]
@@ -17,7 +17,7 @@ pub struct SceneAutoLoader {
 
 /// System to auto-load the last opened scene when a project is opened
 pub fn auto_load_scene_system(
-    mut commands: Commands,
+    commands: Commands,
     project: Option<Res<CurrentProject>>,
     mut open_scenes: ResMut<crate::scene_tabs::OpenScenes>,  // Changed from CurrentLevel
     mut auto_loader: ResMut<SceneAutoLoader>,

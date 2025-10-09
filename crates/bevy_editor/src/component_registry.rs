@@ -132,7 +132,7 @@ impl ComponentRegistry {
             category: ComponentCategory::Rendering,
             description: "2D camera",
             spawn_fn: |entity| {
-                entity.insert(Camera2d::default());
+                entity.insert(Camera2d);
             },
         });
 
@@ -195,14 +195,8 @@ impl ComponentRegistry {
 
 /// Resource for the component registry
 #[derive(Resource)]
+#[derive(Default)]
 pub struct EditorComponentRegistry {
     pub registry: ComponentRegistry,
 }
 
-impl Default for EditorComponentRegistry {
-    fn default() -> Self {
-        Self {
-            registry: ComponentRegistry::new(),
-        }
-    }
-}

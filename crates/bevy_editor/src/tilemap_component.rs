@@ -33,6 +33,7 @@ impl Default for TilemapComponent {
 /// Component to store layer information for a tilemap
 #[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
+#[derive(Default)]
 pub struct TilemapLayers {
     /// Layer IDs that belong to this tilemap
     pub layer_ids: Vec<u32>,
@@ -40,14 +41,6 @@ pub struct TilemapLayers {
     pub active_layer: Option<u32>,
 }
 
-impl Default for TilemapLayers {
-    fn default() -> Self {
-        Self {
-            layer_ids: Vec::new(),
-            active_layer: None,
-        }
-    }
-}
 
 /// System to create/update tilemap entities when TilemapComponent is added
 pub fn sync_tilemap_entities(
