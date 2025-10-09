@@ -14,7 +14,7 @@ pub struct ClientConfig {
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
-            window_title: "Eryndor Game".to_string(),
+            window_title: "Bevy Game".to_string(),
             window_width: 1280,
             window_height: 720,
             asset_watch: true,
@@ -88,7 +88,9 @@ pub struct ProjectMetadata {
 
 impl ProjectMetadata {
     /// Create project metadata from a project root directory
-    pub fn from_project_path<P: AsRef<Path>>(project_path: P) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_project_path<P: AsRef<Path>>(
+        project_path: P,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let root_path = project_path.as_ref().to_path_buf();
         let config_path = root_path.join("project.bvy");
 
@@ -101,7 +103,7 @@ impl ProjectMetadata {
                     .file_name()
                     .and_then(|n| n.to_str())
                     .unwrap_or("New Project")
-                    .to_string()
+                    .to_string(),
             );
             config.save_to_file(&config_path)?;
             config

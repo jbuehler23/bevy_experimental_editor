@@ -70,7 +70,7 @@ use systems::*;
 use tile_painter::*;
 use tileset_manager::*;
 // use tileset_panel::*;  // Commented out - using panel_manager instead
-use tileset_panel::{SelectTileEvent, SelectTilesetEvent, handle_tile_selection_events};
+use tileset_panel::{handle_tile_selection_events, SelectTileEvent, SelectTilesetEvent};
 use ui::*;
 use workspace::*;
 
@@ -84,7 +84,7 @@ fn main() {
                 })
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        title: "Eryndor Level Editor".to_string(),
+                        title: "Bevy Editor".to_string(),
                         resolution: (1920.0, 1080.0).into(),
                         ..default()
                     }),
@@ -155,9 +155,15 @@ fn main() {
             ),
         )
         // Keyboard shortcuts MUST run before UI to capture shortcuts
-        .add_systems(Update, (handle_global_shortcuts, handle_gizmo_mode_shortcuts))
+        .add_systems(
+            Update,
+            (handle_global_shortcuts, handle_gizmo_mode_shortcuts),
+        )
         // Camera controls
-        .add_systems(Update, (camera::camera_pan_system, camera::camera_zoom_system))
+        .add_systems(
+            Update,
+            (camera::camera_pan_system, camera::camera_zoom_system),
+        )
         .add_systems(
             Update,
             (
@@ -165,15 +171,16 @@ fn main() {
                 auto_load_scene_system,
                 project_selection_ui,
                 project_wizard_ui,
-                update_cli_runner,         // Update bevy CLI runner
+                update_cli_runner,                 // Update bevy CLI runner
                 build_progress_overlay_ui, // Build progress overlay (MUST run before ui_system to be on top)
                 asset_browser::scan_assets_system, // Scan for texture assets (deprecated)
                 project_browser::refresh_project_browser_system, // Refresh project browser
                 (
                     ui_system,
-                    panel_manager::render_left_panel,  // Left panel with Scene Tree and Layers tabs
+                    panel_manager::render_left_panel, // Left panel with Scene Tree and Layers tabs
                     panel_manager::render_right_panel, // Right panel with Inspector and Tilesets tabs
-                ).chain(), // Ensure panels render in strict order within same frame
+                )
+                    .chain(), // Ensure panels render in strict order within same frame
                 scene_tree_panel::handle_scene_tree_commands, // Handle scene tree commands
                 scene_editor::handle_transform_edit_events, // Handle transform edit events
                 scene_editor::handle_name_edit_events, // Handle name edit events
@@ -203,8 +210,8 @@ fn main() {
                 handle_selection,
                 handle_entity_deletion,
                 draw_grid,
-                draw_selection_gizmos,  // Handles both old and new editor entities
-                draw_gizmo_mode_indicator,  // Show current gizmo mode in viewport
+                draw_selection_gizmos, // Handles both old and new editor entities
+                draw_gizmo_mode_indicator, // Show current gizmo mode in viewport
             ),
         )
         // Tilemap systems

@@ -1,9 +1,9 @@
+use crate::formats::ProjectConfig;
+use bevy::prelude::*;
 use std::fs;
 use std::path::Path;
-use bevy::prelude::*;
-use crate::formats::ProjectConfig;
 
-use crate::scene_loader_template::{SCENE_LOADER_TEMPLATE, PROJECT_FORMAT_TEMPLATE};
+use crate::scene_loader_template::{PROJECT_FORMAT_TEMPLATE, SCENE_LOADER_TEMPLATE};
 
 /// Template for a new Bevy project
 #[derive(Debug, Clone, PartialEq)]
@@ -88,8 +88,7 @@ fn generate_from_bevy_cli(
     use std::process::Command;
 
     // Get parent directory where bevy will create the project
-    let parent_dir = project_path.parent()
-        .ok_or("Invalid project path")?;
+    let parent_dir = project_path.parent().ok_or("Invalid project path")?;
 
     // Check if directory already exists - bevy new fails if it does
     if project_path.exists() {
@@ -101,7 +100,7 @@ fn generate_from_bevy_cli(
     // CARGO_GENERATE_VALUE_* environment variables to skip interactive prompts
     let status = Command::new("bevy")
         .args(["new", project_name, "--template", "2d"])
-        .env("CARGO_GENERATE_VALUE_ITCH_USERNAME", "")  // Skip itch.io username prompt
+        .env("CARGO_GENERATE_VALUE_ITCH_USERNAME", "") // Skip itch.io username prompt
         .current_dir(parent_dir)
         .status()
         .map_err(|e| format!("Failed to run 'bevy new': {}. Is bevy CLI installed?", e))?;
@@ -124,7 +123,7 @@ fn generate_from_bevy_cli(
     let dev_md_path = project_path.join("DEVELOPMENT.md");
     if dev_md_path.exists() {
         let existing = fs::read_to_string(&dev_md_path)?;
-        let updated = format!("{}\n\n## Eryndor Editor Integration\n\nThis project was created with the Eryndor Editor using the bevy_new_2d template.\n\n- Use the editor to create and edit levels\n- Levels are saved in `assets/world/` as `.bscene` files\n- Use the toolbar buttons to run, test, and build your game\n\n", existing);
+        let updated = format!("{}\n\n## Bevy Editor Integration\n\nThis project was created with the Bevy Editor using the bevy_new_2d template.\n\n- Use the editor to create and edit levels\n- Levels are saved in `assets/world/` as `.bscene` files\n- Use the toolbar buttons to run, test, and build your game\n\n", existing);
         fs::write(&dev_md_path, updated)?;
     }
 
@@ -168,9 +167,7 @@ fn generate_cargo_toml(
         .collect::<String>();
 
     let dependencies = match template {
-        ProjectTemplate::Empty => {
-            r#"bevy = "0.16""#
-        }
+        ProjectTemplate::Empty => r#"bevy = "0.16""#,
         ProjectTemplate::Tilemap2D => {
             r#"bevy = { version = "0.16", features = ["file_watcher"] }
 bevy_ecs_tilemap = "0.16"
@@ -638,7 +635,10 @@ pub fn handle_level_loaded(
 }
 "#;
 
-    fs::write(project_path.join("src/tilemap_renderer.rs"), tilemap_renderer)?;
+    fs::write(
+        project_path.join("src/tilemap_renderer.rs"),
+        tilemap_renderer,
+    )?;
 
     Ok(())
 }
@@ -807,7 +807,9 @@ See: https://github.com/bevyengine/bevy/blob/main/docs/profiling.md
 }
 
 /// Get the package name from a project's Cargo.toml
-pub fn get_package_name_from_cargo_toml(project_path: &Path) -> Result<String, Box<dyn std::error::Error>> {
+pub fn get_package_name_from_cargo_toml(
+    project_path: &Path,
+) -> Result<String, Box<dyn std::error::Error>> {
     let cargo_toml_path = project_path.join("Cargo.toml");
     let contents = fs::read_to_string(cargo_toml_path)?;
 
@@ -825,18 +827,26 @@ pub fn get_package_name_from_cargo_toml(project_path: &Path) -> Result<String, B
 }
 /// Generate scene_loader.rs with inline data structures
 fn generate_scene_loader(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    fs::write(project_path.join("src/scene_loader.rs"), SCENE_LOADER_TEMPLATE)?;
+    fs::write(
+        project_path.join("src/scene_loader.rs"),
+        SCENE_LOADER_TEMPLATE,
+    )?;
     Ok(())
 }
 
 /// Generate project_format.rs with project configuration structures
 fn generate_project_format(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    fs::write(project_path.join("src/project_format.rs"), PROJECT_FORMAT_TEMPLATE)?;
+    fs::write(
+        project_path.join("src/project_format.rs"),
+        PROJECT_FORMAT_TEMPLATE,
+    )?;
     Ok(())
 }
 
 /// Generate .cargo/config.toml for bevy_new_2d projects (adds fast linker)
-fn generate_cargo_config_for_bevy_new_2d(project_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+fn generate_cargo_config_for_bevy_new_2d(
+    project_path: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Create .cargo directory
     let cargo_dir = project_path.join(".cargo");
     fs::create_dir_all(&cargo_dir)?;
@@ -844,7 +854,7 @@ fn generate_cargo_config_for_bevy_new_2d(project_path: &Path) -> Result<(), Box<
     // bevy_new_2d template doesn't include .cargo/config.toml
     // Adding fast linker configuration dramatically speeds up builds
     let cargo_config = r#"# Cargo configuration for fast Bevy builds
-# Added by Eryndor Editor
+# Added by Bevy Editor
 
 [target.x86_64-pc-windows-msvc]
 # Use LLD linker (much faster than default MSVC linker)
