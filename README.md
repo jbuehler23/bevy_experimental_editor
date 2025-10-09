@@ -74,12 +74,14 @@ bevy run
 1. Launch the editor
 2. Create a new project or open an existing one
 3. Use the viewport to edit your scene
-4. Select entities with left-click
-5. Transform entities using gizmos:
+4. Add any type of supported entity (I use Sprite a lot at the moment for testing)
+5. Play around with the Inspector values, attach an image, etc
+6. Select entities with left-click
+7. Transform entities using gizmos:
    - **Q**: Move mode
    - **W**: Rotate mode
    - **E**: Scale mode
-6. Save your scene with Ctrl+S
+8. Save your scene with Ctrl+S
 
 ## Architecture
 
