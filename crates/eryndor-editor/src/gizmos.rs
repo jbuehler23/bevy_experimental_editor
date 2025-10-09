@@ -1,8 +1,65 @@
 use bevy::prelude::*;
+use bevy_egui::{egui, EguiContexts};
 
 use crate::{EditorState, Selection, EditorEntity, EditorEntityType, EditorTool};
 use crate::tile_painter::{TilePainter, PaintMode};
 use crate::scene_editor::{EditorScene, EditorSceneEntity};
+
+/// Gizmo manipulation mode
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum GizmoMode {
+    #[default]
+    Move,
+    Rotate,
+    Scale,
+}
+
+impl GizmoMode {
+    pub fn display_name(&self) -> &str {
+        match self {
+            GizmoMode::Move => "Move (Q)",
+            GizmoMode::Rotate => "Rotate (W)",
+            GizmoMode::Scale => "Scale (E)",
+        }
+    }
+
+    pub fn icon(&self) -> &str {
+        match self {
+            GizmoMode::Move => "↔",  // Arrows
+            GizmoMode::Rotate => "↻",  // Rotation arrow
+            GizmoMode::Scale => "⤢",  // Diagonal arrows
+        }
+    }
+}
+
+/// Resource to track current gizmo mode
+#[derive(Resource, Default)]
+pub struct GizmoState {
+    pub mode: GizmoMode,
+}
+
+/// System to handle gizmo mode switching with keyboard shortcuts
+/// Q - Move mode, W - Rotate mode, E - Scale mode (similar to Unity/Godot)
+pub fn handle_gizmo_mode_shortcuts(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut gizmo_state: ResMut<GizmoState>,
+) {
+    // Q - Move mode
+    if keyboard.just_pressed(KeyCode::KeyQ) {
+        gizmo_state.mode = GizmoMode::Move;
+        info!("Switched to Move gizmo mode");
+    }
+    // W - Rotate mode
+    else if keyboard.just_pressed(KeyCode::KeyW) {
+        gizmo_state.mode = GizmoMode::Rotate;
+        info!("Switched to Rotate gizmo mode");
+    }
+    // E - Scale mode
+    else if keyboard.just_pressed(KeyCode::KeyE) {
+        gizmo_state.mode = GizmoMode::Scale;
+        info!("Switched to Scale gizmo mode");
+    }
+}
 
 /// Draw grid in the viewport
 pub fn draw_grid(
@@ -79,6 +136,7 @@ pub fn draw_selection_gizmos(
         With<EditorSceneEntity>,
     >,
     images: Res<Assets<Image>>,
+    gizmo_state: Res<GizmoState>,
 ) {
     // Draw gizmos for old system entities
     for selected_entity in selection.selected.iter() {
@@ -158,8 +216,12 @@ pub fn draw_selection_gizmos(
                 gizmos.line_2d(corners[i], corners[(i + 1) % 4], Color::srgb(1.0, 1.0, 0.0));
             }
 
-            // Draw move handles at entity position
-            draw_move_handles(&mut gizmos, pos);
+            // Draw appropriate gizmo handles based on mode
+            match gizmo_state.mode {
+                GizmoMode::Move => draw_move_handles(&mut gizmos, pos),
+                GizmoMode::Rotate => draw_rotation_handles(&mut gizmos, pos, bounds),
+                GizmoMode::Scale => draw_scale_handles(&mut gizmos, pos, bounds),
+            }
         }
     }
 }
@@ -194,6 +256,78 @@ fn draw_move_handles(gizmos: &mut Gizmos, position: Vec2) {
         handle_size * 0.7,
         Color::srgb(0.0, 1.0, 0.0),
     );
+}
+
+/// Draw rotation handles (circular arc with handle)
+fn draw_rotation_handles(gizmos: &mut Gizmos, position: Vec2, bounds: Vec2) {
+    let radius = (bounds.length() / 2.0) + 20.0; // Offset from bounds
+    let handle_size = 8.0;
+
+    // Draw rotation circle
+    gizmos.circle_2d(position, radius, Color::srgba(0.3, 0.7, 1.0, 0.6));
+
+    // Draw rotation handles at cardinal directions
+    let handle_positions = [
+        position + Vec2::new(radius, 0.0),           // Right
+        position + Vec2::new(0.0, radius),           // Top
+        position + Vec2::new(-radius, 0.0),          // Left
+        position + Vec2::new(0.0, -radius),          // Bottom
+    ];
+
+    for handle_pos in handle_positions {
+        gizmos.circle_2d(handle_pos, handle_size, Color::srgb(0.3, 0.7, 1.0));
+    }
+
+    // Center handle
+    gizmos.circle_2d(position, handle_size * 0.5, Color::srgb(1.0, 1.0, 1.0));
+}
+
+/// Draw scale handles (squares at corners and edges)
+fn draw_scale_handles(gizmos: &mut Gizmos, position: Vec2, bounds: Vec2) {
+    let half_size = bounds / 2.0;
+    let handle_size = 6.0;
+
+    // Corner handles (yellow - for uniform and non-uniform scale)
+    let corners = [
+        position + Vec2::new(-half_size.x, -half_size.y),
+        position + Vec2::new(half_size.x, -half_size.y),
+        position + Vec2::new(half_size.x, half_size.y),
+        position + Vec2::new(-half_size.x, half_size.y),
+    ];
+
+    for corner in corners {
+        // Draw square handle
+        let half_handle = handle_size / 2.0;
+        let handle_corners = [
+            corner + Vec2::new(-half_handle, -half_handle),
+            corner + Vec2::new(half_handle, -half_handle),
+            corner + Vec2::new(half_handle, half_handle),
+            corner + Vec2::new(-half_handle, half_handle),
+        ];
+
+        for i in 0..4 {
+            gizmos.line_2d(
+                handle_corners[i],
+                handle_corners[(i + 1) % 4],
+                Color::srgb(1.0, 1.0, 0.0),
+            );
+        }
+    }
+
+    // Edge handles (cyan - for axis-aligned scaling)
+    let edges = [
+        position + Vec2::new(0.0, -half_size.y),     // Bottom
+        position + Vec2::new(half_size.x, 0.0),      // Right
+        position + Vec2::new(0.0, half_size.y),      // Top
+        position + Vec2::new(-half_size.x, 0.0),     // Left
+    ];
+
+    for edge in edges {
+        gizmos.circle_2d(edge, handle_size * 0.7, Color::srgb(0.0, 1.0, 1.0));
+    }
+
+    // Center handle
+    gizmos.circle_2d(position, handle_size * 0.5, Color::srgb(1.0, 1.0, 1.0));
 }
 
 /// Draw preview for rectangle and line tile tools
@@ -457,4 +591,36 @@ fn draw_scene_move_handles(gizmos: &mut Gizmos, position: Vec2) {
         handle_size * 0.8,
         Color::srgb(0.0, 1.0, 0.0),
     );
+}
+
+/// Draw gizmo mode indicator overlay in viewport
+pub fn draw_gizmo_mode_indicator(
+    mut contexts: EguiContexts,
+    gizmo_state: Res<GizmoState>,
+) {
+    let ctx = contexts.ctx_mut();
+
+    // Draw in top-left of viewport (not covered by panels)
+    egui::Area::new(egui::Id::new("gizmo_mode_indicator"))
+        .anchor(egui::Align2::LEFT_TOP, [270.0, 10.0])  // Offset from left panel
+        .show(ctx, |ui| {
+            egui::Frame::none()
+                .fill(egui::Color32::from_rgba_unmultiplied(40, 40, 40, 200))
+                .rounding(4.0)
+                .inner_margin(8.0)
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            egui::RichText::new(gizmo_state.mode.icon())
+                                .size(18.0)
+                                .color(egui::Color32::from_rgb(180, 200, 255))
+                        );
+                        ui.label(
+                            egui::RichText::new(gizmo_state.mode.display_name())
+                                .size(13.0)
+                                .color(egui::Color32::from_rgb(220, 220, 220))
+                        );
+                    });
+                });
+        });
 }

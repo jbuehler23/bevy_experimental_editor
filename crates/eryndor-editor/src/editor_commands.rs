@@ -2,7 +2,7 @@
 
 use super::editor_history::EditorCommand;
 use crate::entity_templates::EntityTemplate;
-use crate::scene_editor::{EditorScene, EditorSceneEntity};
+use crate::scene_editor::EditorScene;
 use bevy::prelude::*;
 
 /// Command to create a new entity
@@ -58,7 +58,7 @@ impl EditorCommand for CreateEntityCommand {
     fn undo(&mut self, world: &mut World) {
         if let Some(entity) = self.entity {
             // Save component data before deleting (for potential redo)
-            if let Some(entity_ref) = world.get_entity(entity) {
+            if let Ok(entity_ref) = world.get_entity(entity) {
                 if let Some(name) = entity_ref.get::<Name>() {
                     if let Some(transform) = entity_ref.get::<Transform>() {
                         self.saved_components = Some(SavedEntityData {
@@ -70,8 +70,8 @@ impl EditorCommand for CreateEntityCommand {
             }
 
             // Despawn the entity
-            if let Some(mut entity_commands) = world.get_entity_mut(entity) {
-                entity_commands.despawn_recursive();
+            if let Ok(mut entity_commands) = world.get_entity_mut(entity) {
+                entity_commands.despawn();
                 info!("Undid entity creation - despawned {:?}", entity);
             }
 
@@ -120,7 +120,7 @@ impl DeleteEntityCommand {
 impl EditorCommand for DeleteEntityCommand {
     fn execute(&mut self, world: &mut World) {
         // Save entity data before deleting
-        if let Some(entity_ref) = world.get_entity(self.entity) {
+        if let Ok(entity_ref) = world.get_entity(self.entity) {
             let name = entity_ref.get::<Name>().map(|n| n.to_string()).unwrap_or_default();
             let transform = entity_ref.get::<Transform>().copied().unwrap_or_default();
             let visibility = entity_ref.get::<Visibility>().copied().unwrap_or_default();
@@ -151,8 +151,8 @@ impl EditorCommand for DeleteEntityCommand {
         }
 
         // Despawn the entity
-        if let Some(mut entity_commands) = world.get_entity_mut(self.entity) {
-            entity_commands.despawn_recursive();
+        if let Ok(mut entity_commands) = world.get_entity_mut(self.entity) {
+            entity_commands.despawn();
             info!("Deleted entity {:?}", self.entity);
         }
 
@@ -175,7 +175,7 @@ impl EditorCommand for DeleteEntityCommand {
             );
 
             // Restore components
-            if let Some(mut entity_commands) = world.get_entity_mut(entity) {
+            if let Ok(mut entity_commands) = world.get_entity_mut(entity) {
                 entity_commands.insert(Name::new(data.name.clone()));
                 entity_commands.insert(data.transform);
                 entity_commands.insert(data.visibility);
@@ -264,7 +264,7 @@ impl TransformCommand {
 
 impl EditorCommand for TransformCommand {
     fn execute(&mut self, world: &mut World) {
-        if let Some(mut entity_commands) = world.get_entity_mut(self.entity) {
+        if let Ok(mut entity_commands) = world.get_entity_mut(self.entity) {
             entity_commands.insert(self.new_transform);
         }
 
@@ -274,7 +274,7 @@ impl EditorCommand for TransformCommand {
     }
 
     fn undo(&mut self, world: &mut World) {
-        if let Some(mut entity_commands) = world.get_entity_mut(self.entity) {
+        if let Ok(mut entity_commands) = world.get_entity_mut(self.entity) {
             entity_commands.insert(self.old_transform);
         }
 
@@ -287,7 +287,7 @@ impl EditorCommand for TransformCommand {
         format!("Change {}", self.property_name)
     }
 
-    fn can_merge_with(&self, other: &dyn EditorCommand) -> bool {
+    fn can_merge_with(&self, _other: &dyn EditorCommand) -> bool {
         // Try to downcast to TransformCommand
         // This is a simplified version - in practice, you'd want better type checking
         false  // For now, don't merge transform commands
@@ -313,7 +313,7 @@ impl RenameEntityCommand {
 
 impl EditorCommand for RenameEntityCommand {
     fn execute(&mut self, world: &mut World) {
-        if let Some(mut entity_commands) = world.get_entity_mut(self.entity) {
+        if let Ok(mut entity_commands) = world.get_entity_mut(self.entity) {
             entity_commands.insert(Name::new(self.new_name.clone()));
         }
 
@@ -323,7 +323,7 @@ impl EditorCommand for RenameEntityCommand {
     }
 
     fn undo(&mut self, world: &mut World) {
-        if let Some(mut entity_commands) = world.get_entity_mut(self.entity) {
+        if let Ok(mut entity_commands) = world.get_entity_mut(self.entity) {
             entity_commands.insert(Name::new(self.old_name.clone()));
         }
 

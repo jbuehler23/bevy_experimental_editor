@@ -108,6 +108,40 @@ impl EditorHistory {
         info!("Executed command (history size: {})", self.undo_stack.len());
     }
 
+    /// Add a command to history without executing it (for commands already applied)
+    pub fn add_executed(&mut self, command: Box<dyn EditorCommand>) {
+        if self.is_executing {
+            warn!("Attempted to add command while executing - ignoring");
+            return;
+        }
+
+        // Clear redo stack when new command is added
+        self.redo_stack.clear();
+
+        // Try to merge with last command if possible
+        if let Some(last) = self.undo_stack.back_mut() {
+            if last.command.can_merge_with(command.as_ref()) {
+                last.command.merge(command);
+                return;
+            }
+        }
+
+        // Add to undo stack (already executed)
+        self.undo_stack.push_back(CommandWrapper {
+            command,
+            executed: true,
+        });
+
+        // Limit history size
+        if self.undo_stack.len() > MAX_HISTORY_SIZE {
+            self.undo_stack.pop_front();
+        }
+
+        self.total_commands += 1;
+
+        info!("Added executed command to history (size: {})", self.undo_stack.len());
+    }
+
     /// Undo the last command
     pub fn undo(&mut self, world: &mut World) -> bool {
         if self.is_executing {

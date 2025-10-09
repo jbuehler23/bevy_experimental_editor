@@ -11,6 +11,8 @@ mod camera;
 mod cli_output_panel;
 mod collision_editor;
 mod component_registry;
+mod editor_commands;
+mod editor_history;
 mod entity_templates;
 mod gizmos;
 mod icons;
@@ -107,6 +109,8 @@ fn main() {
         .init_resource::<panel_manager::PanelManager>()
         .init_resource::<panel_manager::NameEditBuffer>()
         .init_resource::<viewport_selection::GizmoDragState>()
+        .init_resource::<gizmos::GizmoState>()
+        .init_resource::<editor_history::EditorHistory>()
         // Project resources
         .init_resource::<ProjectSelection>()
         .init_resource::<ProjectWizard>()
@@ -148,7 +152,7 @@ fn main() {
             ),
         )
         // Keyboard shortcuts MUST run before UI to capture shortcuts
-        .add_systems(Update, handle_global_shortcuts)
+        .add_systems(Update, (handle_global_shortcuts, handle_gizmo_mode_shortcuts))
         .add_systems(
             Update,
             (
@@ -192,11 +196,13 @@ fn main() {
             (
                 viewport_selection::viewport_entity_selection_system,
                 viewport_selection::gizmo_drag_interaction_system,
+                viewport_selection::transform_with_undo_system
+                    .after(viewport_selection::gizmo_drag_interaction_system),
                 handle_selection,
                 handle_entity_deletion,
                 draw_grid,
-                draw_selection_gizmos,
-                draw_scene_entity_gizmos,
+                draw_selection_gizmos,  // Handles both old and new editor entities
+                draw_gizmo_mode_indicator,  // Show current gizmo mode in viewport
             ),
         )
         // Tilemap systems
