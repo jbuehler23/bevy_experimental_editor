@@ -1,0 +1,38 @@
+[package]
+name = "bevy_editor"
+version = "0.1.0"
+edition = "2021"
+description = "An experimental Bevy game editor"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+bevy = { workspace = true }
+
+# Editor-specific dependencies
+bevy-inspector-egui = "0.31"
+bevy_egui = "0.34"  # Version 0.34 uses egui 0.31, avoiding the 0.32 API breaking changes
+bevy_pancam = "0.18"
+bevy_ecs_tilemap = "0.16"
+
+# File dialogs
+rfd = "0.15"
+
+# Clipboard support
+arboard = "3.4"
+
+# Image loading for tilesets
+image = "0.25"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Threading/async
+crossbeam-channel = "0.5"
+
+# System paths
+dirs = "5.0"
+
+[lints]
+workspace = true

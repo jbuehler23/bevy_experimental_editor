@@ -1,14 +1,6 @@
 [workspace]
 members = [
-    "spacetime-demos/blackholio/server-rust",
-    "spacetime-demos/blackholio/client-bevy",
-    "crates/eryndor-server-spacetimedb",
-    "crates/eryndor-client",
-    "crates/eryndor-common", "crates/eryndor-editor",
-]
-exclude = [
-    "spacetime-demos/ldtk/platformer-server",
-    "spacetime-demos/ldtk/platformer-client",
+    "crates/bevy_editor",
 ]
 resolver = "2"
 
