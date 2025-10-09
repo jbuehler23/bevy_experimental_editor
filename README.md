@@ -2,11 +2,11 @@
 
 An experimental, in-development game editor for the Bevy Engine built with Bevy itself. Uses bevy CLI and templates for building/running/creating new projects.
 
-> **WARNING - Early Development**: This editor is in active development and many features are incomplete or experimental. It is not production-ready.
+> **WARNING - Early Development**: This editor is in active development and many features are incomplete or experimental.
 
 ## Features
 
-### Currently Implemented (Phase 1)
+### Currently Implemented
 
 - **Scene Editor**
   - Visual scene editing with viewport
@@ -66,7 +66,7 @@ git clone <repository-url>
 cd bevy_experimental_editor
 
 # Run the editor
-bevy run --package bevy_editor
+bevy run
 ```
 
 ### Quick Start
@@ -158,8 +158,3 @@ Built with:
 - [bevy_pancam](https://github.com/johanhelsing/bevy_pancam) - 2D camera controls
 - [bevy_ecs_tilemap](https://github.com/StarArawn/bevy_ecs_tilemap) - Tilemap rendering
 
-## Status
-
-**Current Phase**: 1.2 - Core Editor Infrastructure
-
-See [EDITOR_ROADMAP.md](docs/EDITOR_ROADMAP.md) for detailed status and upcoming milestones.
