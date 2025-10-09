@@ -155,6 +155,5 @@ Built with:
 - [Bevy](https://bevyengine.org/) - Game engine and ECS framework
 - [egui](https://github.com/emilk/egui) - Immediate mode GUI (via bevy_egui)
 - [bevy-inspector-egui](https://github.com/jakobhellermann/bevy-inspector-egui) - Inspector widgets
-- [bevy_pancam](https://github.com/johanhelsing/bevy_pancam) - 2D camera controls
 - [bevy_ecs_tilemap](https://github.com/StarArawn/bevy_ecs_tilemap) - Tilemap rendering
 
