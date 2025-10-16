@@ -1,0 +1,23 @@
+[package]
+name = "bevy_editor_ui_egui"
+version = "0.1.0"
+edition = "2021"
+description = "egui-based UI layer for the modular Bevy editor"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+bevy = { workspace = true }
+bevy_egui = "0.34"
+bevy_editor_foundation = { path = "../bevy_editor_foundation" }
+bevy_editor_project = { path = "../bevy_editor_project", features = ["cli"] }
+bevy_editor_scene = { path = "../bevy_editor_scene" }
+bevy_editor_assets = { path = "../bevy_editor_assets" }
+bevy_editor_tilemap = { path = "../bevy_editor_tilemap" }
+bevy_editor_formats = { path = "../bevy_editor_formats" }
+bevy_editor_commands = { path = "../bevy_editor_commands" }
+bevy_editor_core = { path = "../bevy_editor_core" }
+bevy_editor_frontend_api = { path = "../bevy_editor_frontend_api" }
+rfd = "0.15"
+
+[lints]
+workspace = true

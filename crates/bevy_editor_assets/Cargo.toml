@@ -1,0 +1,16 @@
+[package]
+name = "bevy_editor_assets"
+version = "0.1.0"
+edition = "2021"
+description = "Asset discovery and scanning utilities for the Bevy editor backend"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+
+[dependencies]
+bevy = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.10"
+
+[lints]
+workspace = true

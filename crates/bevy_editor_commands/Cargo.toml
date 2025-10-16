@@ -1,0 +1,15 @@
+[package]
+name = "bevy_editor_commands"
+version = "0.1.0"
+edition = "2021"
+description = "Command pattern infrastructure for Bevy-based editors."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/bevyengine/bevy-editor"
+keywords = ["bevy", "editor", "commands"]
+categories = ["game-development", "game-engines"]
+
+[dependencies]
+bevy = { workspace = true }
+
+[lints]
+workspace = true

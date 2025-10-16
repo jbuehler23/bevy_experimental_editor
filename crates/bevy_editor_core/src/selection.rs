@@ -107,10 +107,10 @@ pub fn get_cursor_world_pos_2d(
     windows: &Query<&Window>,
     camera_q: &Query<(&Camera, &GlobalTransform)>,
 ) -> Option<Vec2> {
-    let Ok(window) = windows.get_single() else {
+    let Ok(window) = windows.single() else {
         return None;
     };
-    let Ok((camera, camera_transform)) = camera_q.get_single() else {
+    let Ok((camera, camera_transform)) = camera_q.single() else {
         return None;
     };
 

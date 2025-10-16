@@ -1,0 +1,18 @@
+[package]
+name = "bevy_editor_formats"
+version = "0.1.0"
+edition = "2021"
+description = "Data formats and components shared by the Bevy editor ecosystem."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/bevyengine/bevy-editor"
+keywords = ["bevy", "editor", "formats"]
+categories = ["game-development", "game-engines"]
+
+[dependencies]
+bevy = { workspace = true }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = "0.4.42"
+
+[lints]
+workspace = true

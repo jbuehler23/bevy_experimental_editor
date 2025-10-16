@@ -1,0 +1,15 @@
+[package]
+name = "bevy_editor_foundation"
+version = "0.1.0"
+edition = "2021"
+description = "Shared types and traits for building modular Bevy editor plugins."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/bevyengine/bevy-editor"
+keywords = ["bevy", "editor", "gamedev"]
+categories = ["game-development", "game-engines"]
+
+[dependencies]
+bevy = { workspace = true }
+
+[lints]
+workspace = true

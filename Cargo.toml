@@ -1,7 +1,17 @@
 [workspace]
 members = [
     "crates/bevy_editor_core",
+    "crates/bevy_editor_app",
     "crates/bevy_editor",
+    "crates/bevy_editor_foundation",
+    "crates/bevy_editor_formats",
+    "crates/bevy_editor_commands",
+    "crates/bevy_editor_tilemap",
+    "crates/bevy_editor_scene",
+    "crates/bevy_editor_project",
+    "crates/bevy_editor_assets",
+    "crates/bevy_editor_frontend_api",
+    "crates/bevy_editor_ui_egui",
 ]
 resolver = "2"
 

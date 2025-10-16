@@ -1,0 +1,23 @@
+[package]
+name = "bevy_editor_tilemap"
+version = "0.1.0"
+edition = "2021"
+description = "Tilemap editing plugin for Bevy editors - includes brush tools, layers, and collision editing"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/bevyengine/bevy-editor"
+keywords = ["bevy", "editor", "tilemap", "gamedev"]
+categories = ["game-development", "game-engines"]
+
+[dependencies]
+bevy = { workspace = true }
+bevy_editor_foundation = { path = "../bevy_editor_foundation" }
+bevy_editor_formats = { path = "../bevy_editor_formats" }
+bevy_ecs_tilemap = { version = "0.16", optional = true }
+image = { version = "0.25", optional = true }
+
+[features]
+default = ["tilemap"]
+tilemap = ["dep:bevy_ecs_tilemap", "dep:image"]
+
+[lints]
+workspace = true

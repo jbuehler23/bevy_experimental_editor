@@ -822,20 +822,44 @@ dependencies = [
 name = "bevy_editor"
 version = "0.1.0"
 dependencies = [
- "arboard",
  "bevy",
  "bevy-inspector-egui",
- "bevy_ecs_tilemap",
- "bevy_editor_core",
+ "bevy_editor_app",
+ "bevy_editor_ui_egui",
  "bevy_egui",
- "chrono",
- "crossbeam-channel",
- "dirs",
- "image",
+]
+
+[[package]]
+name = "bevy_editor_app"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_ecs_tilemap",
+ "bevy_editor_assets",
+ "bevy_editor_commands",
+ "bevy_editor_core",
+ "bevy_editor_formats",
+ "bevy_editor_foundation",
+ "bevy_editor_frontend_api",
+ "bevy_editor_project",
+ "bevy_editor_scene",
+ "bevy_editor_tilemap",
  "rfd",
- "serde",
- "serde_json",
- "toml",
+]
+
+[[package]]
+name = "bevy_editor_assets"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "tempfile",
+]
+
+[[package]]
+name = "bevy_editor_commands"
+version = "0.1.0"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]
@@ -844,6 +868,86 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_egui",
+]
+
+[[package]]
+name = "bevy_editor_formats"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "chrono",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "bevy_editor_foundation"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
+name = "bevy_editor_frontend_api"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_editor_foundation",
+]
+
+[[package]]
+name = "bevy_editor_project"
+version = "0.1.0"
+dependencies = [
+ "arboard",
+ "bevy",
+ "bevy_editor_formats",
+ "bevy_editor_foundation",
+ "bevy_egui",
+ "chrono",
+ "crossbeam-channel",
+ "dirs",
+ "rfd",
+ "serde",
+ "serde_json",
+ "toml",
+]
+
+[[package]]
+name = "bevy_editor_scene"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_editor_formats",
+]
+
+[[package]]
+name = "bevy_editor_tilemap"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_ecs_tilemap",
+ "bevy_editor_formats",
+ "bevy_editor_foundation",
+ "image",
+]
+
+[[package]]
+name = "bevy_editor_ui_egui"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_editor_assets",
+ "bevy_editor_commands",
+ "bevy_editor_core",
+ "bevy_editor_formats",
+ "bevy_editor_foundation",
+ "bevy_editor_frontend_api",
+ "bevy_editor_project",
+ "bevy_editor_scene",
+ "bevy_editor_tilemap",
+ "bevy_egui",
+ "rfd",
 ]
 
 [[package]]

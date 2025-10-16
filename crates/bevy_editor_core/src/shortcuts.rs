@@ -45,8 +45,10 @@ impl KeyboardShortcut {
             return false;
         }
 
-        let ctrl_pressed = keyboard.pressed(KeyCode::ControlLeft) || keyboard.pressed(KeyCode::ControlRight);
-        let shift_pressed = keyboard.pressed(KeyCode::ShiftLeft) || keyboard.pressed(KeyCode::ShiftRight);
+        let ctrl_pressed =
+            keyboard.pressed(KeyCode::ControlLeft) || keyboard.pressed(KeyCode::ControlRight);
+        let shift_pressed =
+            keyboard.pressed(KeyCode::ShiftLeft) || keyboard.pressed(KeyCode::ShiftRight);
         let alt_pressed = keyboard.pressed(KeyCode::AltLeft) || keyboard.pressed(KeyCode::AltRight);
 
         ctrl_pressed == self.ctrl && shift_pressed == self.shift && alt_pressed == self.alt
@@ -91,7 +93,7 @@ pub fn process_shortcuts_system(
 ) {
     for (id, shortcut) in registry.iter() {
         if shortcut.matches(&keyboard) {
-            events.send(ShortcutEvent { id: id.clone() });
+            events.write(ShortcutEvent { id: id.clone() });
         }
     }
 }

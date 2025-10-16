@@ -6,7 +6,6 @@
 //! - **Camera**: Editor camera with pan and zoom controls
 //! - **Selection**: Entity selection system with multi-select support
 //! - **Gizmos**: Transform gizmo modes (Move, Rotate, Scale)
-//! - **History**: Undo/redo system with command pattern
 //! - **Shortcuts**: Keyboard shortcut management
 //!
 //! ## Example
@@ -30,14 +29,14 @@
 pub mod camera;
 pub mod gizmos;
 pub mod selection;
-pub mod editor_history;
 pub mod shortcuts;
 
 // Re-export commonly used types
-pub use camera::{EditorCamera, camera_pan_system, camera_zoom_system};
-pub use selection::{Selectable, Selection, SelectionEvent, SelectionPlugin, handle_2d_selection_system};
-pub use gizmos::{GizmoMode, GizmoState, GizmoPlugin, handle_gizmo_mode_shortcuts};
-pub use editor_history::{EditorCommand, EditorHistory};
+pub use camera::{camera_pan_system, camera_zoom_system, EditorCamera};
+pub use gizmos::{handle_gizmo_mode_shortcuts, GizmoMode, GizmoPlugin, GizmoState};
+pub use selection::{
+    handle_2d_selection_system, Selectable, Selection, SelectionEvent, SelectionPlugin,
+};
 pub use shortcuts::{KeyboardShortcut, ShortcutRegistry};
 
 /// Convenience plugin that adds all editor core systems
@@ -45,10 +44,7 @@ pub struct EditorCorePlugin;
 
 impl bevy::app::Plugin for EditorCorePlugin {
     fn build(&self, app: &mut bevy::app::App) {
-        app.add_plugins((
-            SelectionPlugin,
-            GizmoPlugin,
-        ));
+        app.add_plugins((SelectionPlugin, GizmoPlugin));
     }
 }
 
@@ -57,6 +53,9 @@ pub struct EditorCameraPlugin;
 
 impl bevy::app::Plugin for EditorCameraPlugin {
     fn build(&self, app: &mut bevy::app::App) {
-        app.add_systems(bevy::app::Update, (camera::camera_pan_system, camera::camera_zoom_system));
+        app.add_systems(
+            bevy::app::Update,
+            (camera::camera_pan_system, camera::camera_zoom_system),
+        );
     }
 }

@@ -1,0 +1,13 @@
+[package]
+name = "bevy_editor_frontend_api"
+version = "0.1.0"
+edition = "2021"
+description = "Frontend contracts shared across modular Bevy editor UIs"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+bevy = { workspace = true }
+bevy_editor_foundation = { path = "../bevy_editor_foundation" }
+
+[lints]
+workspace = true

@@ -5,8 +5,8 @@
 //! - Mouse wheel to zoom
 //! - Does NOT respond to WASD (reserved for other editor functions)
 
-use bevy::prelude::*;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
+use bevy::prelude::*;
 use bevy::render::camera::Projection;
 
 /// Marker component for the editor camera
@@ -35,7 +35,9 @@ pub fn camera_pan_system(
     mut egui_context: bevy_egui::EguiContexts,
 ) {
     // Don't pan if egui is using the mouse
-    let ctx = egui_context.ctx_mut();
+    let Some(ctx) = egui_context.try_ctx_mut() else {
+        return;
+    };
     if ctx.is_pointer_over_area() {
         return;
     }
@@ -45,7 +47,8 @@ pub fn camera_pan_system(
         return;
     }
 
-    let Ok((mut transform, projection)) = camera_query.get_single_mut() else {
+    let mut cameras = camera_query.iter_mut();
+    let Some((mut transform, projection)) = cameras.next() else {
         return;
     };
 
@@ -75,12 +78,15 @@ pub fn camera_zoom_system(
     mut egui_context: bevy_egui::EguiContexts,
 ) {
     // Don't zoom if egui is using the mouse
-    let ctx = egui_context.ctx_mut();
+    let Some(ctx) = egui_context.try_ctx_mut() else {
+        return;
+    };
     if ctx.is_pointer_over_area() {
         return;
     }
 
-    let Ok((mut projection, mut editor_camera)) = camera_query.get_single_mut() else {
+    let mut cameras = camera_query.iter_mut();
+    let Some((mut projection, mut editor_camera)) = cameras.next() else {
         return;
     };
 

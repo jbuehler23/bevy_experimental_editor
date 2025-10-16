@@ -7,33 +7,10 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 bevy = { workspace = true }
-bevy_editor_core = { path = "../bevy_editor_core" }
-
-# Editor-specific dependencies
+bevy_editor_app = { path = "../bevy_editor_app" }
+bevy_editor_ui_egui = { path = "../bevy_editor_ui_egui" }
 bevy-inspector-egui = "0.31"
-bevy_egui = "0.34"  # Version 0.34 uses egui 0.31, avoiding the 0.32 API breaking changes
-bevy_ecs_tilemap = "0.16"
-
-# File dialogs
-rfd = "0.15"
-
-# Clipboard support
-arboard = "3.4"
-
-# Image loading for tilesets
-image = "0.25"
-
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-toml = "0.8"
-
-# Threading/async
-crossbeam-channel = "0.5"
-
-# System paths
-dirs = "5.0"
-chrono = "0.4.42"
+bevy_egui = "0.34"
 
 [lints]
 workspace = true
