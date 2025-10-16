@@ -35,7 +35,7 @@ This document outlines the development plan for the Bevy Experimental Editor, or
 - [ ] Viewport rendering pipeline
 - [ ] Camera controls (orthographic/perspective switching)
 - [ ] Grid snapping toggle
-- [ ] Viewport gizmo overlay (top-right orientation widget)
+- [x] Viewport gizmo overlay (top-left orientation widget)
 
 **Status**: Basic viewport works, needs multi-view support.
 
@@ -54,8 +54,8 @@ This document outlines the development plan for the Bevy Experimental Editor, or
 **Goal**: Handle all asset types the editor needs to work with.
 
 ### 2.1 Asset Browser Enhancements
-- [ ] Thumbnail generation for images/scenes
-- [ ] Asset preview panel
+- [x] Thumbnail generation for images/scenes
+- [x] Asset preview panel - kind of
 - [ ] Asset metadata editor
 - [ ] Search and filtering
 - [ ] Folder organization
@@ -99,7 +99,7 @@ This document outlines the development plan for the Bevy Experimental Editor, or
 - [ ] Collision shape library
 
 ### 3.2 Physics Integration
-- [ ] Choose physics backend (Rapier/Avian)
+- [ ] Integrate with Avian
 - [ ] Rigidbody component editor
 - [ ] Physics simulation toggle
 - [ ] Joint/constraint editor

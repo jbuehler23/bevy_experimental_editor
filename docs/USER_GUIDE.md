@@ -1,110 +1,134 @@
 # User Guide
 
-This document walks through the day-to-day editor workflow after the modular refactor.
-
-_Last updated: 2025-10-16_
+How to use the Bevy Experimental Editor.
 
 ---
 
-## Launching the Editor
+## Getting Started
 
+Launch the editor:
 ```bash
 cargo run -p bevy_editor
 ```
 
-At first launch you will be prompted to either **Create Project** or **Open Project**.  
-The workspace file is stored under `~/.bevy_experimental_editor/workspace.json`.
+First time? You'll see a project picker. Click **Create Project** to make a new one, or **Open Project** to browse for an existing Bevy project.
+
+![Create Project](screenshots/create_project.png)
+
+The editor remembers your recent projects in `~/.bevy_experimental_editor/workspace.json`.
 
 ---
 
-## Workspace Overview
+## The Workspace
 
-| Panel | Purpose | Tips |
-| ----- | ------- | ---- |
-| **Viewport** | Interactive scene view with gizmos | Q/W/E to toggle Move/Rotate/Scale, hold middle mouse to pan, mouse wheel to zoom |
-| **Scene Tabs** | Each tab represents an `OpenScene` | Unsaved changes are snapshotted when switching tabs; save with Ctrl+S |
-| **Scene Tree (left)** | Hierarchical list of entities | Double-click renames in the inspector; drag-and-drop reparenting coming soon |
-| **Inspector (right)** | Component editing | Sprite textures can be picked via file dialog (project-relative paths) |
-| **Asset Browser** | Project assets grouped by type | Double-click an image to assign it to the selected sprite |
-| **Project Browser** | File system view of the workspace | Use toolbar to refresh, add folders, or open in Explorer/Finder |
-| **CLI Output** | Captures `cargo`/`bevy` commands | Toolbar buttons run Build/Run/Web/Lint; Stop terminates the active command |
-| **Tilemap Panels** | Layer list, tileset preview, collision tools | Load a tileset, select a layer, then pick a brush mode |
+**Viewport** (center): Interactive scene view. Click entities to select, drag gizmos to transform.
+
+**Scene Tree** (left): Hierarchy of entities in the current scene. Right-click to add/delete entities.
+
+**Inspector** (right): Edit components on the selected entity. Change transforms, assign textures, tweak UI properties.
+
+**Scene Tabs** (top): Each tab is a separate scene. Switch between them freely - the editor saves your work in memory.
+
+**Toolbar** (top): Run builds, save scenes, toggle tools.
+
+**Panels** (bottom): Asset browser, project files, CLI output, tilemap tools.
 
 ---
 
-## Core Workflows
+## Common Tasks
 
-### Creating & Saving Scenes
+### Creating a Scene
 
-1. Use the **Scene Tabs** bar to add a new scene or switch between existing ones.
-2. The current tab’s state lives in `OpenScenes`. When you switch tabs the editor:
-   - Snapshots the current world into an in-memory `DynamicScene`
-   - Restores the target tab’s runtime snapshot (or loads from disk)
-3. Save with **Ctrl+S** to write the scene to disk (`.scn.ron`).
-4. The tab label displays `* SceneName` while unsaved.
+1. Click the **+** button in the scene tabs bar
+2. Name your scene (e.g., "level_1")
+3. Hit **Ctrl+S** to save it to disk
 
-### Editing Entities
+The scene gets saved as a `.scn.ron` file in your project's assets folder.
 
-1. **Add** entities via the Scene Tree “Add Entity” menu (Empty, Sprite, Camera2D, Button, Text).
-2. Use gizmos to move, rotate, or scale (Q/W/E).
-3. The Inspector lets you tweak:
-   - `Transform`, `Visibility`, `Sprite`, UI `Node`, `Text`, etc.
-   - Sprite textures (`Assign Texture` button opens a picker rooted at the project assets folder).
-4. Double-click any property field to edit the value, press Enter to commit.
+### Adding Entities
 
-### Asset Management
+Right-click in the Scene Tree → **Add Entity**. Pick from:
+- Empty (container for children)
+- Sprite (2D image)
+- Camera2D
+- UI Button
+- UI Text
 
-- The **Asset Browser** scans textures beneath the project’s `assets/` directory.
-- Click **Refresh** to rescan; double-click an image to assign it to the currently selected sprite.
-- The **Project Browser** shows the raw file hierarchy, allowing new folders and deletion.
+### Moving Things Around
 
-### Tilemap Tooling
+Select an entity in the viewport, then:
+- **Q** - Move gizmo (drag arrows to reposition)
+- **W** - Rotate gizmo (drag circle to rotate)
+- **E** - Scale gizmo (drag boxes to resize)
 
-1. Load a tileset (`Load Tileset` button) and select a layer in the **Layer** panel.
-2. Choose a brush mode (single, rectangle, line, bucket, stamp).
-3. Paint directly onto the viewport – the cursor snaps to the grid.
-4. Use the collision editor to define per-tile collision shapes.
+Hold **middle mouse** to pan. **Mouse wheel** to zoom.
 
-### CLI Integration
+### Assigning Textures
 
-- The toolbar provides `Run`, `Web`, `Build`, `Lint`, and `Stop` buttons.
-- Output appears in the CLI panel; the panel auto-opens when a command starts.
-- Commands are sent through `EditorAction::RunProjectCommand` and surfaced back via `EditorEvent`.
+1. Select a sprite entity
+2. In the Inspector, find the **Sprite** component
+3. Click **Assign Texture**
+4. Pick an image from your project's `assets/` folder
+
+Or use the **Asset Browser**: double-click any texture to apply it to the selected sprite.
+
+![Asset Browser](screenshots/asset_browser.png)
+
+### Painting Tilemaps - CURRENTLY BROKEN AFTER REFACTORING
+
+1. Open the **Tilemap** panel (bottom)
+2. Click **Load Tileset** and pick a PNG
+3. Select a layer from the **Layers** panel
+4. Choose a brush mode (single, rectangle, line, fill)
+5. Click in the viewport to paint
+
+The tileset grid snaps automatically. Use the inspector to adjust grid size if needed.
+
+### Running Your Game
+
+![Terminal](screenshots/cli.png)
+
+Click **Run** in the toolbar. The editor:
+1. Builds your project with `cargo build`
+2. Launches the game in a new window
+3. Shows compilation output in the CLI panel
+
+Hit **Stop** to kill the running process. You can also run web builds or linting from the same toolbar.
+
+![Run Game](screenshots/run_game.png)
 
 ---
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-| -------- | ------ |
-| Ctrl + S | Save current scene |
-| Ctrl + O | Open scene (file dialog) |
-| Ctrl + Shift + S | Save As |
-| Ctrl + Z / Ctrl + Shift + Z | Undo / Redo |
-| Ctrl + Y | Redo (alternative) |
+| Key | Action |
+| --- | ------ |
+| Ctrl+S | Save current scene |
+| Ctrl+Z / Ctrl+Shift+Z | Undo / Redo |
 | Q / W / E | Move / Rotate / Scale gizmo |
-| V / I / E | Select / Eyedropper / Erase tool |
 | G | Toggle grid snap |
-| Alt + drag | Temporary eyedropper |
+| V | Select tool |
+| I | Eyedropper (pick tile or color) |
+| Alt+Click | Temporary eyedropper |
 
 ---
 
-## Extending the Editor
+## Tips
 
-- Implement `EditorFrontend` to create a new UI. Feed actions/events through `bevy_editor_frontend_api`.
-- Embed only the backends you need by depending on the relevant crates (scene/project/assets/tilemap).
-- Consult [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for crate responsibilities and layering guidelines.
+**Scene tabs remember unsaved changes.** Switch tabs freely - the editor snapshots your work. Hit Ctrl+S when you're ready to commit to disk.
 
----
+**Project-relative paths.** When you assign a texture, the editor stores the path relative to your project root. This keeps scenes portable across machines.
 
-## Troubleshooting
+**Grid snapping.** Press **G** to toggle. When enabled, entities snap to the nearest grid cell as you drag them.
 
-| Issue | Resolution |
-| ----- | ---------- |
-| Scene disappears after tab switch | Ensure you built with the latest `cache_runtime_scene_on_scene_switch` logic (`bevy_editor_app`). |
-| Sprites load blank textures | Inspector assigns project-relative paths; confirm the file exists under the project’s `assets/` directory. |
-| CLI commands fail | Check that the project has a valid Cargo workspace; ensure `bevy` CLI is installed if using template commands. |
+**CLI panel.** If a build fails, check the CLI output for errors. The panel stays open after the process exits so you can review the log.
 
 ---
 
-Happy editing! Contributions are welcome – see the root `README.md` for setup and testing instructions.
+## Next Steps
+
+- Check out [`ARCHITECTURE.md`](ARCHITECTURE.md) if you want to embed the editor in your own tools
+- See [`EDITOR_ROADMAP.md`](EDITOR_ROADMAP.md) for upcoming features
+- Report bugs or request features on GitHub
+
+Happy editing!
