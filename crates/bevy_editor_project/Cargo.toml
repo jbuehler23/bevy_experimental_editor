@@ -13,6 +13,7 @@ readme = "README.md"
 bevy = { workspace = true }
 bevy_editor_foundation = { path = "../bevy_editor_foundation" }
 bevy_editor_formats = { path = "../bevy_editor_formats" }
+bevy_editor_templates = { path = "../bevy_editor_templates" }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }

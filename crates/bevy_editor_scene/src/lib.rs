@@ -192,6 +192,22 @@ impl OpenScenes {
     pub fn has_unsaved_changes(&self) -> bool {
         self.scenes.iter().any(|scene| scene.is_modified)
     }
+
+    /// Get the name of the active scene (used for running scenes in the game)
+    pub fn get_active_scene_name(&self) -> Option<String> {
+        self.active_scene().map(|scene| {
+            // Extract just the filename without extension
+            scene.file_path
+                .as_ref()
+                .and_then(|path| {
+                    std::path::Path::new(path)
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .map(|s| s.to_string())
+                })
+                .unwrap_or_else(|| scene.name.clone())
+        })
+    }
 }
 
 /// Load a scene from disk and merge it into the open scene collection.

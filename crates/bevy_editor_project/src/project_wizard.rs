@@ -1,3 +1,4 @@
+use crate::file_dialog_helper::FileDialogState;
 use crate::project_generator::{generate_project, ProjectTemplate};
 use crate::project_manager::{ProjectSelection, ProjectSelectionState};
 use bevy::prelude::*;
@@ -6,12 +7,25 @@ use std::path::PathBuf;
 use std::process::Command;
 
 /// Resource to track the project wizard state
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct ProjectWizard {
     pub project_name: String,
     pub project_path: Option<PathBuf>,
     pub selected_template: ProjectTemplate,
     pub show_wizard: bool,
+    pub file_dialog_state: FileDialogState,
+}
+
+impl Default for ProjectWizard {
+    fn default() -> Self {
+        Self {
+            project_name: String::new(),
+            project_path: None,
+            selected_template: ProjectTemplate::default(),
+            show_wizard: false,
+            file_dialog_state: FileDialogState::new(),
+        }
+    }
 }
 
 impl Default for ProjectTemplate {
@@ -45,25 +59,40 @@ pub fn project_wizard_ui(
 
             // Project Location
             ui.label("Project Location:");
-            ui.horizontal(|ui| {
-                let location_text = wizard
-                    .project_path
-                    .as_ref()
-                    .map(|p| p.display().to_string())
-                    .unwrap_or_else(|| "Not selected".to_string());
 
-                ui.label(location_text);
-
-                if ui.button("Browse...").clicked() {
-                    // Open file dialog to select directory
-                    if let Some(folder) = rfd::FileDialog::new()
-                        .set_title("Select Project Location")
-                        .pick_folder()
-                    {
-                        wizard.project_path = Some(folder);
-                    }
+            // Show current selection or manual entry UI
+            if wizard.file_dialog_state.show_manual_entry {
+                // Manual path entry mode
+                if let Some(path) = wizard.file_dialog_state.render_manual_entry_ui(ui, "Path:") {
+                    wizard.project_path = Some(path);
+                    wizard.file_dialog_state.show_manual_entry = false;
                 }
-            });
+            } else {
+                // Normal dialog mode
+                ui.horizontal(|ui| {
+                    let location_text = wizard
+                        .project_path
+                        .as_ref()
+                        .map(|p| p.display().to_string())
+                        .unwrap_or_else(|| "Not selected".to_string());
+
+                    ui.label(location_text);
+
+                    if ui.button("Browse...").clicked() {
+                        if let Some(folder) = wizard.file_dialog_state.try_pick_folder("Select Project Location") {
+                            wizard.project_path = Some(folder);
+                        }
+                    }
+
+                    // Add manual entry button for convenience
+                    if ui.small_button("✏ Manual").on_hover_text("Enter path manually").clicked() {
+                        wizard.file_dialog_state.show_manual_entry = true;
+                        if let Some(ref path) = wizard.project_path {
+                            wizard.file_dialog_state.manual_path = path.display().to_string();
+                        }
+                    }
+                });
+            }
             ui.add_space(10.0);
 
             // Template Selection

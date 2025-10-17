@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 #[cfg(feature = "cli")]
 use crate::bevy_cli_runner::BevyCLIRunner;
 #[cfg(feature = "ui")]
+use crate::file_dialog_helper::FileDialogState;
+#[cfg(feature = "ui")]
 use crate::project_wizard::ProjectWizard;
 #[cfg(feature = "workspace")]
 use crate::workspace::EditorWorkspace;
@@ -190,9 +192,21 @@ pub enum ProjectSelectionState {
 }
 
 /// Resource to track project selection UI state
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct ProjectSelection {
     pub state: ProjectSelectionState,
+    #[cfg(feature = "ui")]
+    pub file_dialog_state: FileDialogState,
+}
+
+impl Default for ProjectSelection {
+    fn default() -> Self {
+        Self {
+            state: ProjectSelectionState::default(),
+            #[cfg(feature = "ui")]
+            file_dialog_state: FileDialogState::new(),
+        }
+    }
 }
 
 /// System to handle project selection before editor is fully initialized
@@ -297,13 +311,21 @@ pub fn project_selection_ui(
 
                     if ui.button("📂 Open Existing Project").clicked() {
                         // Open file dialog to select project directory
-                        if let Some(folder) = rfd::FileDialog::new()
-                            .set_title("Open Project")
-                            .pick_folder()
-                        {
+                        if let Some(folder) = selection.file_dialog_state.try_pick_folder("Open Project") {
                             selection.state = ProjectSelectionState::Opening {
                                 path: folder.to_string_lossy().to_string(),
                             };
+                        }
+                    }
+
+                    // Show manual entry option if dialog failed
+                    if selection.file_dialog_state.show_manual_entry {
+                        ui.add_space(10.0);
+                        if let Some(folder) = selection.file_dialog_state.render_manual_entry_ui(ui, "Project Path:") {
+                            selection.state = ProjectSelectionState::Opening {
+                                path: folder.to_string_lossy().to_string(),
+                            };
+                            selection.file_dialog_state.show_manual_entry = false;
                         }
                     }
                 });

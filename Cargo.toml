@@ -12,6 +12,8 @@ members = [
     "crates/bevy_editor_assets",
     "crates/bevy_editor_frontend_api",
     "crates/bevy_editor_ui_egui",
+    "crates/bevy_editor_runtime",
+    "crates/bevy_editor_templates",
 ]
 resolver = "2"
 

@@ -20,6 +20,8 @@ pub struct BevyCLIRunner {
     pub output_lines: Vec<CLIOutputLine>,
     /// Maximum number of output lines to keep
     pub max_output_lines: usize,
+    /// Scene name to load when running RunScene command
+    pub scene_to_run: Option<String>,
 }
 
 /// A running CLI process
@@ -34,6 +36,8 @@ pub struct RunningProcess {
 pub enum CLICommand {
     /// Run native dev build (bevy run)
     Run,
+    /// Run current scene in dev build (bevy run with BEVY_EDITOR_SCENE env var)
+    RunScene,
     /// Run web dev build (bevy run web)
     RunWeb,
     /// Build native dev (cargo build)
@@ -50,6 +54,7 @@ impl CLICommand {
     pub fn name(&self) -> &str {
         match self {
             CLICommand::Run => "Run Game",
+            CLICommand::RunScene => "Run Scene",
             CLICommand::RunWeb => "Run Web",
             CLICommand::Build => "Build",
             CLICommand::BuildWeb => "Build Web",
@@ -61,6 +66,7 @@ impl CLICommand {
     pub fn command_args(&self) -> (&str, Vec<&str>) {
         match self {
             CLICommand::Run => ("bevy", vec!["run"]),
+            CLICommand::RunScene => ("bevy", vec!["run"]),
             CLICommand::RunWeb => ("bevy", vec!["run", "web"]),
             CLICommand::Build => ("cargo", vec!["build"]),
             CLICommand::BuildWeb => ("bevy", vec!["build", "web", "--bundle"]),
@@ -70,7 +76,7 @@ impl CLICommand {
     }
 
     pub fn is_long_running(&self) -> bool {
-        matches!(self, CLICommand::Run | CLICommand::RunWeb)
+        matches!(self, CLICommand::Run | CLICommand::RunScene | CLICommand::RunWeb)
     }
 }
 
@@ -100,6 +106,7 @@ impl Default for BevyCLIRunner {
             output_sender: sender,
             output_lines: Vec::new(),
             max_output_lines: 1000,
+            scene_to_run: None,
         }
     }
 }
@@ -139,12 +146,26 @@ impl BevyCLIRunner {
 
         let (cmd, args) = command.command_args();
 
-        // Spawn the process
-        let mut child = Command::new(cmd)
+        // Create the command builder
+        let mut command_builder = Command::new(cmd);
+        command_builder
             .args(&args)
             .current_dir(&project_path)
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        // If running a scene, set the BEVY_EDITOR_SCENE environment variable
+        if matches!(command, CLICommand::RunScene) {
+            if let Some(scene_name) = &self.scene_to_run {
+                info!("Running scene: {}", scene_name);
+                command_builder.env("BEVY_EDITOR_SCENE", scene_name);
+            } else {
+                return Err("No scene selected to run".to_string());
+            }
+        }
+
+        // Spawn the process
+        let mut child = command_builder
             .spawn()
             .map_err(|e| format!("Failed to spawn {}: {}", cmd, e))?;
 

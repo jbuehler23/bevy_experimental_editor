@@ -1,0 +1,15 @@
+[package]
+name = "bevy_editor_runtime"
+version = "0.1.0"
+edition = "2021"
+description = "Optional runtime plugin for loading Bevy editor scenes in games"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/bevyengine/bevy-editor"
+keywords = ["bevy", "editor", "gamedev", "runtime"]
+categories = ["game-development", "game-engines"]
+
+[dependencies]
+bevy = { workspace = true }
+
+[lints]
+workspace = true

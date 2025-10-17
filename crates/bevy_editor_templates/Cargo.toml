@@ -1,0 +1,16 @@
+[package]
+name = "bevy_editor_templates"
+version = "0.1.0"
+edition = "2021"
+description = "Project templates for Bevy editor - provides starter templates for different game types"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/bevyengine/bevy-editor"
+keywords = ["bevy", "editor", "gamedev", "templates"]
+categories = ["game-development", "game-engines"]
+
+[dependencies]
+include_dir = "0.7"
+thiserror = "1.0"
+
+[lints]
+workspace = true

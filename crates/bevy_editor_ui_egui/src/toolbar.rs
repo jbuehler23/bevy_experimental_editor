@@ -183,6 +183,16 @@ pub fn render_toolbar_content(
                 }
 
                 if ui
+                    .button(format!("{} Play Scene", Icons::PLAY))
+                    .on_hover_text("Run the currently active scene with game logic")
+                    .clicked()
+                {
+                    editor_actions.write(EditorAction::RunProjectCommand {
+                        command: ProjectCommand::RunScene,
+                    });
+                }
+
+                if ui
                     .button(format!("{} Web", Icons::PLAY))
                     .on_hover_text("Run web build (bevy run web)")
                     .clicked()

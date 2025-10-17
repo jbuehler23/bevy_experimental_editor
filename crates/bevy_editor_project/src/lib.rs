@@ -42,6 +42,9 @@ pub mod bevy_cli_runner;
 // UI components (note: these have egui dependencies and should eventually move to UI crate)
 pub mod project_wizard;
 
+#[cfg(feature = "ui")]
+pub mod file_dialog_helper;
+
 // Re-export commonly used types
 pub use project_manager::{
     handle_project_selection, BuildProgress, CurrentProject, ProjectManagerSet, ProjectSelection,

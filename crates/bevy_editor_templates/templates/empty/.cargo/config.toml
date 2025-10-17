@@ -1,0 +1,40 @@
+# Cargo configuration for fast Bevy builds
+# Based on bevy_new_2d best practices
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+  # Mold linker - faster than lld on Linux
+  # Install: sudo apt-get install mold clang (Ubuntu)
+  #          sudo dnf install mold clang (Fedora)
+  #          sudo pacman -S mold clang (Arch)
+  # Uncomment to use:
+  # "-Clink-arg=-fuse-ld=mold",
+]
+rustdocflags = [
+  # "-Clink-arg=-fuse-ld=mold",
+]
+
+[target.x86_64-apple-darwin]
+rustflags = [
+  # macOS default ld64 linker is already very fast
+  # No changes needed
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+  # M1/M2/M3 Macs - default linker is optimal
+  # No changes needed
+]
+
+[target.x86_64-pc-windows-msvc]
+# LLD linker for Windows (much faster than default)
+# Install: cargo install -f cargo-binutils
+#          rustup component add llvm-tools
+linker = "rust-lld.exe"
+rustdocflags = ["-Clinker=rust-lld.exe"]
+
+# Optional: Use sccache for build caching (huge speedup on rebuilds)
+# Install: cargo install sccache
+# Uncomment to use:
+# [build]
+# rustc-wrapper = "sccache"

@@ -125,6 +125,7 @@ pub enum EditorPanel {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProjectCommand {
     Run,
+    RunScene,
     RunWeb,
     Build,
     Lint,

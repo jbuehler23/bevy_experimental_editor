@@ -102,6 +102,7 @@ impl<F: EditorFrontend + Clone> Plugin for EditorAppPlugin<F> {
 fn to_cli_command(command: ProjectCommand) -> CLICommand {
     match command {
         ProjectCommand::Run => CLICommand::Run,
+        ProjectCommand::RunScene => CLICommand::RunScene,
         ProjectCommand::RunWeb => CLICommand::RunWeb,
         ProjectCommand::Build => CLICommand::Build,
         ProjectCommand::Lint => CLICommand::Lint,
@@ -115,6 +116,7 @@ fn handle_editor_actions(
     mut cli_runner: ResMut<BevyCLIRunner>,
     mut active_command: ResMut<ActiveProjectCommand>,
     mut editor_events: EventWriter<EditorEvent>,
+    open_scenes: Res<bevy_editor_scene::OpenScenes>,
 ) {
     for action in actions.read() {
         match action {
@@ -125,6 +127,18 @@ fn handle_editor_actions(
                 editor_state.grid_snap_enabled = *enabled;
             }
             EditorAction::RunProjectCommand { command } => {
+                // If running a scene, set the scene name in the CLI runner
+                if matches!(command, ProjectCommand::RunScene) {
+                    if let Some(scene_name) = open_scenes.get_active_scene_name() {
+                        cli_runner.scene_to_run = Some(scene_name);
+                    } else {
+                        editor_events.write(EditorEvent::Error {
+                            message: "No scene is currently open to run".to_string(),
+                        });
+                        continue;
+                    }
+                }
+
                 let cli_command = to_cli_command(*command);
                 match cli_runner.run_command(cli_command) {
                     Ok(()) => {

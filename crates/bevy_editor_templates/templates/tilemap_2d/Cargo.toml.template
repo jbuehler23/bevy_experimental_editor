@@ -1,0 +1,51 @@
+[package]
+name = "{{PACKAGE_NAME}}"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "{{PACKAGE_NAME}}"
+path = "src/main.rs"
+
+[dependencies]
+bevy = { version = "0.16", features = ["file_watcher"] }
+bevy_ecs_tilemap = "0.16"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+# Optional: Include this plugin to load editor-created scenes at runtime
+bevy_editor_runtime = { path = "{{EDITOR_RUNTIME_PATH}}", optional = true }
+
+[features]
+# Default to native dev build with hot-reloading and editor runtime
+default = ["dev_native", "editor-runtime"]
+editor-runtime = ["dep:bevy_editor_runtime"]
+dev = [
+    "bevy/dynamic_linking",  # CRITICAL: Huge compile time improvement
+    "bevy/bevy_dev_tools",
+    "bevy/bevy_ui_debug",
+    "bevy/track_location",
+]
+dev_native = [
+    "dev",
+    "bevy/file_watcher",
+    "bevy/embedded_watcher",
+]
+
+[profile.dev]
+opt-level = 1  # Small optimization for better dev performance
+
+[profile.dev.package."*"]
+opt-level = 3  # Optimize dependencies heavily
+
+[profile.dev.package.wgpu-types]
+debug-assertions = false  # Remove expensive debug assertions
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+
+[profile.web-release]
+inherits = "release"
+opt-level = "s"
+strip = "debuginfo"
